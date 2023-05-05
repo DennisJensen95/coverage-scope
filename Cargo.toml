@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+patch = "0.7.0"
 serde = { version = "1.0.130", features = ["derive"]}
 serde-xml-rs = "0.6.0"
