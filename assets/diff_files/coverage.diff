@@ -1,0 +1,37 @@
+diff --git a/.gitignore b/.gitignore
+index 83be8cc..ccefdc4 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,2 +1,4 @@
+ .coverage
+ coverage.xml
++
++__pycache__
+diff --git a/test_repo/__pycache__/some_module.cpython-311.pyc b/test_repo/__pycache__/some_module.cpython-311.pyc
+deleted file mode 100644
+index f35fd1b..0000000
+Binary files a/test_repo/__pycache__/some_module.cpython-311.pyc and /dev/null differ
+diff --git a/test_repo/new.py b/test_repo/new.py
+new file mode 100644
+index 0000000..095b3c2
+--- /dev/null
++++ b/test_repo/new.py
+@@ -0,0 +1,2 @@
++def some_func():
++  pass
+diff --git a/test_repo/some_module.py b/test_repo/some_module.py
+index 74fb643..657e55e 100644
+--- a/test_repo/some_module.py
++++ b/test_repo/some_module.py
+@@ -1,2 +1,10 @@
++# Change
++
++
+ def function_to_count_numbers_in_a_string(string):
+-    return len([char for char in string if char.isdigit()])
++    print("Hello World")
++    return 1
++
++
++def function_to_count_letters_in_a_string(string):
++    return len([char for char in string if char.isalpha()])
