@@ -19,11 +19,13 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt, clippy
+      
+      - name: Install just
+        run: cargo install just
 
       - name: Build and run tests
         run: |
-          cargo build
-          cargo test --all
+          just test
 
       - name: Calculate test coverage
         run: |
@@ -33,6 +35,6 @@ jobs:
           CARGO_TERM_COLOR: always
 
       - name: Lint code
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: just lint
         env:
           CARGO_TERM_COLOR: always
