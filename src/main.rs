@@ -35,6 +35,11 @@ struct Args {
     /// Fail if coverage is below this threshold
     #[arg(short, long, default_value = "0.0")]
     threshold: f32,
+
+    /// Path to the git repository
+    /// If not specified, the current directory is used
+    #[arg(short, long)]
+    git_dir: Option<String>,
 }
 
 fn main() {
@@ -43,8 +48,18 @@ fn main() {
     // Read xml file
     let file_string = match std::fs::read_to_string(&args.coverage_file) {
         Ok(f) => f,
-        Err(e) => panic!("Error reading file: {e}"),
+        Err(e) => panic!("Error reading file {}: {}", args.coverage_file, e),
     };
+
+    if args.git_dir.is_some() {
+        // Check if dir exists
+        let git_dir = args.git_dir.unwrap();
+        if !std::path::Path::new(&git_dir).exists() {
+            panic!("Directory does not exist: {git_dir}");
+        }
+
+        std::env::set_current_dir(&git_dir).unwrap();
+    }
 
     // Diff command
     let cmd = String::from("git diff ") + &args.branch + " --diff-filter=d";
@@ -57,5 +72,10 @@ fn main() {
 
     let line_coverage_percentage = diff_files.calculate_line_coverage(coverage);
 
-    println!("Coverage percentage: {line_coverage_percentage:.2}%",);
+    println!("Coverage is {line_coverage_percentage:.2}%");
+
+    if line_coverage_percentage < args.threshold {
+        println!("Coverage is below threshold of {:.2}%", args.threshold);
+        std::process::exit(1);
+    }
 }
