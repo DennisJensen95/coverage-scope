@@ -16,6 +16,6 @@ test-local:
 
 test-docker-actions-env:
     cargo tarpaulin --out Xml
-    docker build -t coverage-scope .
+    docker build -t coverage-scope -f Dockerfile.build .
     docker run --rm -it -v $(pwd):/repo -e "GITHUB_WORKSPACE=/repo" coverage-scope cobertura.xml main 80 90
     
