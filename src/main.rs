@@ -67,15 +67,30 @@ fn main() {
     let diff_file_string = run_command(&cmd);
 
     // Parse diff file
-    let diff_files = DiffFiles::new(&diff_file_string);
     let coverage: Coverage = Coverage::new(&file_string);
 
-    let line_coverage_percentage = diff_files.calculate_line_coverage(coverage);
+    if !diff_file_string.is_empty() {
+        let diff_files = DiffFiles::new(&diff_file_string);
+        let line_coverage_percentage = diff_files.calculate_line_coverage(coverage.clone());
+        println!("Git diff coverage is {line_coverage_percentage:.2}%");
 
-    println!("Coverage is {line_coverage_percentage:.2}%");
+        if line_coverage_percentage < args.threshold {
+            println!(
+                "Git diff coverage is below threshold of {:.2}%",
+                args.threshold
+            );
+            std::process::exit(1);
+        }
+    }
 
-    if line_coverage_percentage < args.threshold {
-        println!("Coverage is below threshold of {:.2}%", args.threshold);
+    let total_coverage_percentage = coverage.get_total_coverage();
+    println!("Total coverage is {total_coverage_percentage:.2}%");
+
+    if total_coverage_percentage < args.threshold as f64 {
+        println!(
+            "Total coverage is below threshold of {:.2}%",
+            args.threshold
+        );
         std::process::exit(1);
     }
 }

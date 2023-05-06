@@ -1,4 +1,4 @@
-name: Rust CI
+name: CI
 
 on:
   push:
@@ -22,6 +22,9 @@ jobs:
       
       - name: Install just
         run: cargo install just
+      
+      - name: Install xmlstarlet
+        run: sudo apt-get install xmlstarlet
 
       - name: Build and run tests
         run: |
@@ -31,10 +34,31 @@ jobs:
         run: |
           cargo install cargo-tarpaulin
           cargo tarpaulin --out Xml
+          COVERAGE=$(cat cobertura.xml | xmlstarlet sel -t -v "/coverage/@line-rate" | awk '{printf "%.2f", $1 * 100}')%
+          echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
         env:
           CARGO_TERM_COLOR: always
+      
+      - name: Coverage scope action
+        uses: ./ # Uses an action in the root directory
+        id: coverage
+        with:
+          coverage-filepath: cobertura.xml
+          branch: main
+          threshold: 60
 
       - name: Lint code
         run: just lint
         env:
           CARGO_TERM_COLOR: always
+      
+      - name: Create the Badge
+        if: github.ref == 'refs/heads/main'
+        uses: schneegans/dynamic-badges-action@v1.0.0
+        with:
+          auth: ${{ secrets.CODE_COVERAGE_BADGE }}
+          gistID: 2b7862c80c14d562c8659e1283543190
+          filename: coverage-scope.json
+          label: Test Coverage
+          message: ${{ env.COVERAGE }}
+          color: green

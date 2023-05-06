@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename = "coverage")]
 pub struct Coverage {
     #[serde(rename = "version")]
@@ -12,7 +12,7 @@ pub struct Coverage {
     #[serde(rename = "lines-covered")]
     _lines_covered: String,
     #[serde(rename = "line-rate")]
-    _line_rate: String,
+    line_rate: String,
     #[serde(rename = "branches-covered")]
     _branches_covered: String,
     #[serde(rename = "branches-valid")]
@@ -26,19 +26,19 @@ pub struct Coverage {
     packages: Packages,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Sources {
     #[serde(rename = "source")]
     _source: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Packages {
     #[serde(rename = "package")]
     list_of_packages: Vec<Package>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Package {
     #[serde(rename = "name")]
     _name: String,
@@ -51,12 +51,12 @@ struct Package {
     classes: Classes,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Classes {
     class: Vec<Class>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Class {
     #[serde(rename = "name")]
     _name: String,
@@ -73,15 +73,15 @@ struct Class {
     lines: Lines,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Methods {}
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Lines {
     line: Vec<Line>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Line {
     number: String,
     hits: String,
@@ -137,6 +137,10 @@ impl Coverage {
         coverage
     }
 
+    pub fn get_total_coverage(&self) -> f64 {
+        self.line_rate.parse::<f64>().unwrap() * 100.0
+    }
+
     pub fn get_lines_covered(&self, file_path: &str) -> Vec<usize> {
         let mut lines_covered: Vec<usize> = Vec::new();
 
@@ -180,5 +184,14 @@ mod tests {
 
         let files_covered = coverage.packages.list_of_packages[0].get_files();
         assert_eq!(files_covered.len(), 2);
+    }
+
+    #[test]
+    fn test_get_total_coverage() {
+        let file_string = std::fs::read_to_string("assets/coberta_coverage/coverage.xml").unwrap();
+        let coverage = Coverage::new(&file_string);
+
+        let total_coverage = coverage.get_total_coverage();
+        assert_eq!(total_coverage, 37.5);
     }
 }

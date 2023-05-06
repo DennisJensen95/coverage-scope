@@ -1,0 +1,23 @@
+# action.yml
+name: "Coverage Scope"
+description: "The coverage scope will parse cobertura.xml coverage files and determine total coverage and coverage on newly committed files compared to branch."
+inputs:
+  coverage-filepath:
+    description: "The coverage file path to parse"
+    required: true
+  branch:
+    description: "The branch to determine coverage for"
+    required: true
+    default: "main"
+  threshold:
+    description: "The threshold to determine if coverage is acceptable"
+    required: true
+    default: "80"
+
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - ${{ inputs.coverage-filepath }}
+    - ${{ inputs.branch }}
+    - ${{ inputs.threshold }}
