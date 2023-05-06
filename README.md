@@ -29,14 +29,12 @@ when measuring changed files coverage, and the minimum threshold for both the
 total coverage and the changed files coverage.
 
 ```yaml
-- name: Coverage scope action main
-        uses: ./ # Uses an action in the root directory
-        id: coverage
-        with:
-          coverage-filepath: cobertura.xml
-          branch: main
-          threshold-total: 80
-          threshold-changed: 90
+- uses: dennisjensen95/coverage-scope@v0.1.0-alpha
+  with: 
+    coverage-filepath: cobertura.xml
+    branch: main
+    threshold-total: 80
+    threshold-change: 90
 ```
 
 I made this because I could not find a GitHub action that did this. I wanted
