@@ -1,6 +1,6 @@
 # action.yml
 name: "Coverage Scope"
-description: "The coverage scope will parse cobertura.xml coverage files and determine total coverage and coverage on newly committed files compared to branch."
+description: "GitHub action parses cobertura.xml files to measure total & new code coverage compared to branch."
 inputs:
   coverage-filepath:
     description: "The coverage file path to parse"
@@ -9,14 +9,14 @@ inputs:
     description: "The branch to determine coverage for"
     required: true
     default: "main"
-  threshold:
-    description: "The threshold to determine if coverage is acceptable"
+  threshold-change:
+    description: "The threshold to determine if coverage for the changed files is acceptable"
     required: true
     default: "80"
-  fail-on-total:
-    description: "Whether to fail if total coverage is below threshold"
+  threshold-total:
+    description: "The threshold to determine if total coverage is acceptable"
     required: true
-    default: "false"
+    default: "80"
 
 runs:
   using: "docker"
@@ -24,4 +24,5 @@ runs:
   args:
     - ${{ inputs.coverage-filepath }}
     - ${{ inputs.branch }}
-    - ${{ inputs.threshold }}
+    - ${{ inputs.threshold-change }}
+    - ${{ inputs.threshold-total }}

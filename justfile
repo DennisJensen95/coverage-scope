@@ -12,10 +12,10 @@ ci: lint test
 
 test-local:
     cargo tarpaulin --out Xml
-    cargo run -- --coverage-file cobertura.xml --branch main --threshold 100 --fail-on-total true
+    cargo run -- --coverage-file cobertura.xml --branch main --threshold-change 90 --threshold-total 90
 
 test-docker-actions-env:
     cargo tarpaulin --out Xml
     docker build -t coverage-scope .
-    docker run --rm -it -v $(pwd):/repo -e "GITHUB_WORKSPACE=/repo" coverage-scope cobertura.xml main 80 true
+    docker run --rm -it -v $(pwd):/repo -e "GITHUB_WORKSPACE=/repo" coverage-scope cobertura.xml main 80 90
     
