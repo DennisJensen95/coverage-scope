@@ -29,7 +29,7 @@ pub struct Coverage {
 #[derive(Debug, Deserialize, Clone)]
 struct Sources {
     #[serde(rename = "source")]
-    _source: String,
+    _source: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -224,5 +224,16 @@ mod tests {
 
         let total_coverage = coverage.get_total_coverage();
         assert_eq!(total_coverage, 37.5);
+    }
+
+    #[test]
+    fn test_read_another_coverage_file() {
+        let file_string =
+            std::fs::read_to_string("assets/coberta_coverage/ler_gml_backend_coverage.xml")
+                .unwrap();
+        let coverage = Coverage::new(&file_string);
+
+        let total_coverage = coverage.get_total_coverage();
+        assert_eq!(total_coverage, 93.76);
     }
 }
