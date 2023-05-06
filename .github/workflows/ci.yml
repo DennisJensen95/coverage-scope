@@ -19,9 +19,17 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt, clippy
+
+      - uses: cachix/install-nix-action@v20
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       
       - name: Install just
-        run: cargo install just
+        run: |
+          # Update nix
+          nix-channel --add https://nixos.org/channels/nixpkgs-unstable
+          nix-channel --update
+          nix-env -iA nixpkgs.just
       
       - name: Install xmlstarlet
         run: sudo apt-get install xmlstarlet
@@ -45,28 +53,17 @@ jobs:
           CARGO_TERM_COLOR: always
       
       - name: Coverage scope action main
-        if: github.ref == 'refs/heads/main'
         uses: ./ # Uses an action in the root directory
         id: coverage
         with:
           coverage-filepath: cobertura.xml
           branch: main
-          threshold: 60
-          fail-on-total: true
+          threshold-total: 80
+          threshold-change: 90
 
-      - name: Coverage scope action PR
-        if: github.ref != 'refs/heads/main'
-        uses: ./ # Uses an action in the root directory
-        id: coverage-pr
-        with:
-          coverage-filepath: cobertura.xml
-          branch: ${{ github.ref }}
-          threshold: 60
-          fail-on-total: false
-      
       - name: Create the Badge
         if: github.ref == 'refs/heads/main'
-        uses: schneegans/dynamic-badges-action@v1.0.0
+        uses: schneegans/dynamic-badges-action@v1.6.0
         with:
           auth: ${{ secrets.CODE_COVERAGE_BADGE }}
           gistID: 2b7862c80c14d562c8659e1283543190

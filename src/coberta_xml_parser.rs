@@ -129,6 +129,23 @@ impl Package {
         }
         lines_covered
     }
+
+    fn get_total_lines(&self, file_path: String) -> Vec<usize> {
+        let mut lines_total: Vec<usize> = Vec::new();
+
+        for class in &self.classes.class {
+            if class.get_filepath() == file_path {
+                for line in &class.lines.line {
+                    let line_number = line.number.parse::<usize>();
+                    match line_number {
+                        Ok(n) => lines_total.push(n),
+                        Err(e) => println!("Error: {e}"),
+                    }
+                }
+            }
+        }
+        lines_total
+    }
 }
 
 impl Coverage {
@@ -153,6 +170,20 @@ impl Coverage {
         }
 
         lines_covered
+    }
+
+    pub fn get_lines_with_code(&self, file_path: &str) -> Vec<usize> {
+        let mut lines_with_code: Vec<usize> = Vec::new();
+
+        for package in &self.packages.list_of_packages {
+            for file in package.get_files() {
+                if file == file_path {
+                    lines_with_code.append(&mut package.get_total_lines(file_path.into()));
+                }
+            }
+        }
+
+        lines_with_code
     }
 }
 

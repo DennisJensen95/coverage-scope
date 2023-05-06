@@ -19,6 +19,11 @@ impl DiffFiles {
         for patch in patches {
             let file_path = patch.new.path;
 
+            // Only code files
+            if !(file_path.ends_with(".rs") || file_path.ends_with(".py")) {
+                continue;
+            }
+
             let mut lines_changed: Vec<usize> = Vec::new();
 
             for hunk in patch.hunks {
@@ -50,16 +55,22 @@ impl DiffFiles {
 
             let lines_changed = file.1;
             let lines_covered = coverage.get_lines_covered(file_path.as_str());
+            let lines_with_code = coverage.get_lines_with_code(file_path.as_str());
 
             // Count the lines covered out the lines changed
             let mut lines_covered_count = 0;
+            let mut total_lines_changed_with_code = 0;
             for line in &lines_changed {
                 if lines_covered.contains(line) {
                     lines_covered_count += 1;
                 }
+
+                if lines_with_code.contains(line) {
+                    total_lines_changed_with_code += 1;
+                }
             }
 
-            total_lines_changed += lines_changed.len();
+            total_lines_changed += total_lines_changed_with_code;
             total_lines_covered += lines_covered_count;
         }
 
@@ -78,14 +89,31 @@ mod tests {
 
         let diff_files = DiffFiles::new(&diff_file_string);
 
-        assert_eq!(diff_files.files.len(), 3);
+        assert_eq!(diff_files.files.len(), 2);
 
         let coverage_string = std::fs::read_to_string("assets/coberta_coverage/coverage.xml")
             .expect("Unable to read file");
         let coverage = Coverage::new(&coverage_string);
         let line_coverage = diff_files.calculate_line_coverage(coverage);
 
-        // 3/12 lines covered 25% coverage
-        assert_eq!(line_coverage, 25.0);
+        // We only changed 4 lines of code and half of them are covered
+        assert_eq!(line_coverage, 50.0);
+    }
+
+    #[test]
+    fn test_parse_tricky_diff() {
+        let diff_file_string =
+            std::fs::read_to_string("assets/diff_files/tricky.diff").expect("Unable to read file");
+
+        let diff_files = DiffFiles::new(&diff_file_string);
+
+        assert_eq!(diff_files.files.len(), 1);
+
+        let mut total_lines_changed = 0;
+        for file in diff_files.files {
+            total_lines_changed += file.1.len();
+        }
+
+        assert_eq!(total_lines_changed, 215);
     }
 }
