@@ -3,28 +3,33 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize)]
 #[serde(rename = "coverage")]
 pub struct Coverage {
-    version: String,
-    timestamp: String,
+    #[serde(rename = "version")]
+    _version: String,
+    #[serde(rename = "timestamp")]
+    _timestamp: String,
     #[serde(rename = "lines-valid")]
-    lines_valid: String,
+    _lines_valid: String,
     #[serde(rename = "lines-covered")]
-    lines_covered: String,
+    _lines_covered: String,
     #[serde(rename = "line-rate")]
-    line_rate: String,
+    _line_rate: String,
     #[serde(rename = "branches-covered")]
-    branches_covered: String,
+    _branches_covered: String,
     #[serde(rename = "branches-valid")]
-    branches_valid: String,
+    _branches_valid: String,
     #[serde(rename = "branch-rate")]
-    branch_rate: String,
-    complexity: String,
-    sources: Sources,
+    _branch_rate: String,
+    #[serde(rename = "complexity")]
+    _complexity: String,
+    #[serde(rename = "version")]
+    _sources: Sources,
     packages: Packages,
 }
 
 #[derive(Debug, Deserialize)]
 struct Sources {
-    source: String,
+    #[serde(rename = "source")]
+    _source: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -35,12 +40,14 @@ struct Packages {
 
 #[derive(Debug, Deserialize)]
 struct Package {
-    name: String,
+    #[serde(rename = "name")]
+    _name: String,
     #[serde(rename = "line-rate")]
-    line_rate: String,
+    _line_rate: String,
     #[serde(rename = "branch-rate")]
-    branch_rate: String,
-    complexity: String,
+    _branch_rate: String,
+    #[serde(rename = "complexity")]
+    _complexity: String,
     classes: Classes,
 }
 
@@ -51,14 +58,18 @@ struct Classes {
 
 #[derive(Debug, Deserialize)]
 struct Class {
-    name: String,
+    #[serde(rename = "name")]
+    _name: String,
+    #[serde(rename = "filename")]
     filename: String,
-    complexity: String,
+    #[serde(rename = "complexity")]
+    _complexity: String,
     #[serde(rename = "line-rate")]
-    line_rate: String,
+    _line_rate: String,
     #[serde(rename = "branch-rate")]
-    branch_rate: String,
-    methods: Option<Methods>,
+    _branch_rate: String,
+    #[serde(rename = "methods")]
+    _methods: Option<Methods>,
     lines: Lines,
 }
 
@@ -89,7 +100,7 @@ impl Class {
                 let line_number = line.number.parse::<usize>();
                 match line_number {
                     Ok(n) => lines_covered.push(n),
-                    Err(e) => println!("Error: {}", e),
+                    Err(e) => println!("Error: {e}"),
                 }
             }
         }
@@ -120,7 +131,7 @@ impl Package {
 
 impl Coverage {
     pub fn new(file_string: &str) -> Coverage {
-        let coverage: Coverage = serde_xml_rs::from_str(&file_string).unwrap();
+        let coverage: Coverage = serde_xml_rs::from_str(file_string).unwrap();
         coverage
     }
 

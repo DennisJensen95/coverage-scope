@@ -14,8 +14,10 @@ fn run_command(command: &str) -> String {
         .output()
         .expect("failed to execute process");
 
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    stdout
+    match String::from_utf8(output.stdout) {
+        Ok(s) => s,
+        Err(e) => panic!("Invalid UTF-8 sequence: {e}"),
+    }
 }
 
 /// Simple program to greet a person
@@ -41,12 +43,12 @@ fn main() {
     // Read xml file
     let file_string = match std::fs::read_to_string(&args.coverage_file) {
         Ok(f) => f,
-        Err(e) => panic!("Error reading file: {}", e),
+        Err(e) => panic!("Error reading file: {e}"),
     };
 
     // Diff command
     let cmd = String::from("git diff ") + &args.branch + " --diff-filter=d";
-    println!("Running command: {}", cmd);
+    println!("Running command: {cmd}");
     let diff_file_string = run_command(&cmd);
 
     // Parse diff file
@@ -72,7 +74,7 @@ fn main() {
         // Count the lines covered out the lines changed
         let mut lines_covered_count = 0;
         for line in &lines_changed {
-            if lines_covered.contains(&line) {
+            if lines_covered.contains(line) {
                 lines_covered_count += 1;
             }
         }
@@ -83,18 +85,18 @@ fn main() {
 
     let coverage_percentage = total_lines_covered as f32 / total_lines_changed as f32 * 100.0;
 
-    println!("Total lines changed in new commit: {}", total_lines_changed);
-    println!("Total lines covered in new commit: {}", total_lines_covered);
-    println!("Coverage percentage: {:.2}%", coverage_percentage);
+    println!("Total lines changed in new commit: {total_lines_changed}");
+    println!("Total lines covered in new commit: {total_lines_covered}");
+    println!("Coverage percentage: {coverage_percentage:.2}%",);
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
 
-    #[test]
-    fn test_parse_diff_file() {
-        // Read diff file from assets/diff_files/coverage.diff
-        let diff_file_string = std::fs::read_to_string("assets/diff_files/coverage.diff").unwrap();
-    }
-}
+//     #[test]
+//     fn test_parse_diff_file() {
+//         // Read diff file from assets/diff_files/coverage.diff
+//         let diff_file_string = std::fs::read_to_string("assets/diff_files/coverage.diff").unwrap();
+//     }
+// }
