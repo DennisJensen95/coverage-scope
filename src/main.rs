@@ -55,48 +55,7 @@ fn main() {
     let diff_files = DiffFiles::new(&diff_file_string);
     let coverage: Coverage = Coverage::new(&file_string);
 
-    println!("Coverage file: {}", args.coverage_file);
-    println!("Count of files changed: {}", diff_files.files.len());
+    let line_coverage_percentage = diff_files.calculate_line_coverage(coverage);
 
-    let mut total_lines_changed = 0;
-    let mut total_lines_covered = 0;
-    for file in diff_files.files {
-        let file_path = file.0;
-
-        // Check if the file is a code file
-        if !(file_path.ends_with(".rs") || file_path.ends_with(".py")) {
-            continue;
-        }
-
-        let lines_changed = file.1;
-        let lines_covered = coverage.get_lines_covered(file_path.as_str());
-
-        // Count the lines covered out the lines changed
-        let mut lines_covered_count = 0;
-        for line in &lines_changed {
-            if lines_covered.contains(line) {
-                lines_covered_count += 1;
-            }
-        }
-
-        total_lines_changed += lines_changed.len();
-        total_lines_covered += lines_covered_count;
-    }
-
-    let coverage_percentage = total_lines_covered as f32 / total_lines_changed as f32 * 100.0;
-
-    println!("Total lines changed in new commit: {total_lines_changed}");
-    println!("Total lines covered in new commit: {total_lines_covered}");
-    println!("Coverage percentage: {coverage_percentage:.2}%",);
+    println!("Coverage percentage: {line_coverage_percentage:.2}%",);
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn test_parse_diff_file() {
-//         // Read diff file from assets/diff_files/coverage.diff
-//         let diff_file_string = std::fs::read_to_string("assets/diff_files/coverage.diff").unwrap();
-//     }
-// }

@@ -1,1 +1,5 @@
 /target
+
+# Coverage reports
+cobertura.xml
+tarpaulin-report.html

@@ -21,7 +21,7 @@ pub struct Coverage {
     _branch_rate: String,
     #[serde(rename = "complexity")]
     _complexity: String,
-    #[serde(rename = "version")]
+    #[serde(rename = "sources")]
     _sources: Sources,
     packages: Packages,
 }
@@ -119,11 +119,13 @@ impl Package {
         files
     }
 
-    fn get_lines_covered(&self) -> Vec<usize> {
+    fn get_lines_covered(&self, file_path: String) -> Vec<usize> {
         let mut lines_covered: Vec<usize> = Vec::new();
 
         for class in &self.classes.class {
-            lines_covered.append(&mut class.get_lines_covered());
+            if class.get_filepath() == file_path {
+                lines_covered.append(&mut class.get_lines_covered());
+            }
         }
         lines_covered
     }
@@ -141,11 +143,42 @@ impl Coverage {
         for package in &self.packages.list_of_packages {
             for file in package.get_files() {
                 if file == file_path {
-                    lines_covered.append(&mut package.get_lines_covered());
+                    lines_covered.append(&mut package.get_lines_covered(file_path.into()));
                 }
             }
         }
 
         lines_covered
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_lines_covered() {
+        let file_string = std::fs::read_to_string("assets/coberta_coverage/coverage.xml").unwrap();
+        let coverage = Coverage::new(&file_string);
+
+        let files_covered = coverage.packages.list_of_packages[0].get_files();
+        assert_eq!(files_covered.len(), 2);
+
+        // new.py files covered 0
+        let lines_covered = coverage.get_lines_covered("test_repo/new.py");
+        assert_eq!(lines_covered.len(), 0);
+
+        // some_module.py files covered 2
+        let lines_covered = coverage.get_lines_covered("test_repo/some_module.py");
+        assert_eq!(lines_covered.len(), 3);
+    }
+
+    #[test]
+    fn test_get_files() {
+        let file_string = std::fs::read_to_string("assets/coberta_coverage/coverage.xml").unwrap();
+        let coverage = Coverage::new(&file_string);
+
+        let files_covered = coverage.packages.list_of_packages[0].get_files();
+        assert_eq!(files_covered.len(), 2);
     }
 }
