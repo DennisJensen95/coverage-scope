@@ -60,6 +60,15 @@ jobs:
           branch: main
           threshold-total: 80
           threshold-change: 90
+      
+      - uses: dennisjensen95/coverage-scope@v0.1.0-alpha
+        with: 
+          coverage-filepath: cobertura.xml
+          branch: main
+          threshold-total: 80
+          threshold-change: 90
+
+          
 
       - name: Create the Badge
         if: github.ref == 'refs/heads/main'
