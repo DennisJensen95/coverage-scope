@@ -13,6 +13,10 @@ inputs:
     description: "The threshold to determine if coverage is acceptable"
     required: true
     default: "80"
+  fail-on-total:
+    description: "Whether to fail if total coverage is below threshold"
+    required: true
+    default: "false"
 
 runs:
   using: "docker"
