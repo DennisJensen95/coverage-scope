@@ -26,6 +26,11 @@ jobs:
       - name: Install xmlstarlet
         run: sudo apt-get install xmlstarlet
 
+      - name: Lint code
+        run: just lint
+        env:
+          CARGO_TERM_COLOR: always
+
       - name: Build and run tests
         run: |
           just test
@@ -39,18 +44,25 @@ jobs:
         env:
           CARGO_TERM_COLOR: always
       
-      - name: Coverage scope action
+      - name: Coverage scope action main
+        if: github.ref == 'refs/heads/main'
         uses: ./ # Uses an action in the root directory
         id: coverage
         with:
           coverage-filepath: cobertura.xml
           branch: main
           threshold: 60
+          fail-on-total: true
 
-      - name: Lint code
-        run: just lint
-        env:
-          CARGO_TERM_COLOR: always
+      - name: Coverage scope action PR
+        if: github.ref != 'refs/heads/main'
+        uses: ./ # Uses an action in the root directory
+        id: coverage-pr
+        with:
+          coverage-filepath: cobertura.xml
+          branch: ${{ github.ref }}
+          threshold: 60
+          fail-on-total: false
       
       - name: Create the Badge
         if: github.ref == 'refs/heads/main'
