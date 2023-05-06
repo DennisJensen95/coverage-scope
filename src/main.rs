@@ -1,123 +1,10 @@
 use clap::Parser;
-use patch::Patch;
-use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
-#[serde(rename = "coverage")]
-struct Coverage {
-    version: String,
-    timestamp: String,
-    #[serde(rename = "lines-valid")]
-    lines_valid: String,
-    #[serde(rename = "lines-covered")]
-    lines_covered: String,
-    #[serde(rename = "line-rate")]
-    line_rate: String,
-    #[serde(rename = "branches-covered")]
-    branches_covered: String,
-    #[serde(rename = "branches-valid")]
-    branches_valid: String,
-    #[serde(rename = "branch-rate")]
-    branch_rate: String,
-    complexity: String,
-    sources: Sources,
-    packages: Packages,
-}
+mod coberta_xml_parser;
+mod git_diff_parser;
 
-#[derive(Debug, Deserialize)]
-struct Sources {
-    source: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct Packages {
-    #[serde(rename = "package")]
-    list_of_packages: Vec<Package>,
-}
-
-#[derive(Debug, Deserialize)]
-struct Package {
-    name: String,
-    #[serde(rename = "line-rate")]
-    line_rate: String,
-    #[serde(rename = "branch-rate")]
-    branch_rate: String,
-    complexity: String,
-    classes: Classes,
-}
-
-#[derive(Debug, Deserialize)]
-struct Classes {
-    class: Class,
-}
-
-#[derive(Debug, Deserialize)]
-struct Class {
-    name: String,
-    filename: String,
-    complexity: String,
-    #[serde(rename = "line-rate")]
-    line_rate: String,
-    #[serde(rename = "branch-rate")]
-    branch_rate: String,
-    methods: Option<Methods>,
-    lines: Lines,
-}
-
-#[derive(Debug, Deserialize)]
-struct Methods {}
-
-#[derive(Debug, Deserialize)]
-struct Lines {
-    line: Vec<Line>,
-}
-
-#[derive(Debug, Deserialize)]
-struct Line {
-    number: String,
-    hits: String,
-}
-
-// Do an implementation of the Package
-impl Package {
-    fn get_filepath(&self) -> String {
-        self.classes.class.filename.clone()
-    }
-
-    fn get_lines_covered(&self) -> Vec<usize> {
-        let mut lines_covered: Vec<usize> = Vec::new();
-
-        for line in &self.classes.class.lines.line {
-            if line.hits != "0" {
-                let line_number = line.number.parse::<usize>();
-                match line_number {
-                    Ok(n) => lines_covered.push(n),
-                    Err(e) => println!("Error: {}", e),
-                }
-            }
-        }
-        lines_covered
-    }
-}
-
-impl Coverage {
-    fn new(file_string: &str) -> Coverage {
-        let coverage: Coverage = serde_xml_rs::from_str(&file_string).unwrap();
-        coverage
-    }
-
-    fn get_lines_covered(&self, file_path: &str) -> Vec<usize> {
-        let mut lines_covered: Vec<usize> = Vec::new();
-
-        for package in &self.packages.list_of_packages {
-            if package.get_filepath() == file_path {
-                lines_covered = package.get_lines_covered();
-            }
-        }
-
-        lines_covered
-    }
-}
+use coberta_xml_parser::Coverage;
+use git_diff_parser::DiffFiles;
 
 // Make a function that runs a system command
 fn run_command(command: &str) -> String {
@@ -129,42 +16,6 @@ fn run_command(command: &str) -> String {
 
     let stdout = String::from_utf8(output.stdout).unwrap();
     stdout
-}
-
-struct DiffFiles {
-    files: Vec<(String, Vec<usize>)>,
-}
-
-impl DiffFiles {
-    fn new(diff_file_string: &str) -> DiffFiles {
-        // Parse the diff file and return file paths and line numbers changed
-        let patches = match Patch::from_multiple(&diff_file_string) {
-            Ok(p) => p,
-            Err(e) => panic!("Error parsing diff file: {}", e),
-        };
-
-        let mut files_changed = DiffFiles { files: Vec::new() };
-
-        for patch in patches {
-            let file_path = patch.new.path;
-
-            let mut lines_changed: Vec<usize> = Vec::new();
-
-            for hunk in patch.hunks {
-                let line_range = hunk.new_range;
-                for line_number in line_range.start..line_range.start + line_range.count {
-                    lines_changed.push(line_number as usize);
-                }
-            }
-
-            // Remove b/ from the start of the file path
-            let file_path = file_path[2..].to_string();
-
-            files_changed.files.push((file_path.into(), lines_changed));
-        }
-
-        files_changed
-    }
 }
 
 /// Simple program to greet a person
@@ -194,7 +45,8 @@ fn main() {
     };
 
     // Diff command
-    let cmd = String::from("git diff ") + &args.branch;
+    let cmd = String::from("git diff ") + &args.branch + " --diff-filter=d";
+    println!("Running command: {}", cmd);
     let diff_file_string = run_command(&cmd);
 
     // Parse diff file
@@ -227,16 +79,12 @@ fn main() {
 
         total_lines_changed += lines_changed.len();
         total_lines_covered += lines_covered_count;
-
-        println!("File: {}", file_path);
-        println!("Lines changed: {:?}", lines_changed);
-        println!("Lines covered: {:?}", lines_covered);
     }
 
     let coverage_percentage = total_lines_covered as f32 / total_lines_changed as f32 * 100.0;
 
-    println!("Total lines changed: {}", total_lines_changed);
-    println!("Total lines covered: {}", total_lines_covered);
+    println!("Total lines changed in new commit: {}", total_lines_changed);
+    println!("Total lines covered in new commit: {}", total_lines_covered);
     println!("Coverage percentage: {:.2}%", coverage_percentage);
 }
 
