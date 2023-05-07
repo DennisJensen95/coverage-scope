@@ -18,4 +18,9 @@ test-docker-actions-env:
     cargo tarpaulin --out Xml
     docker build -t coverage-scope -f Dockerfile.build .
     docker run --rm -it -v $(pwd):/repo -e "GITHUB_WORKSPACE=/repo" coverage-scope cobertura.xml main 80 90
+
+push-docker VERSION_TAG:
+    docker buildx build --platform linux/amd64 -t coverage-scope-amd64 -f Dockerfile.build .
+    docker tag coverage-scope-amd64 dennisjensen95/coverage-scope:${VERSION_TAG}
+    docker push dennisjensen95/coverage-scope:${VERSION_TAG}
     

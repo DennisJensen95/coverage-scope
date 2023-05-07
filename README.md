@@ -23,6 +23,15 @@ applicable for other languages. (Currently we filter on extension `.py` and
 
 ## Usage
 
+IMPORTANT: When checking out the repository, you need to set the fetch `depth`
+to `0` the `actions/checkout@v3` action.
+
+```yaml
+- uses: actions/checkout@v3
+  with:
+    fetch-depth: 0
+```
+
 To use the GitHub actions for coverage-scope, you need to provide the
 `cobertura` coverage file in xml format, the branch you want to compare against
 when measuring changed files coverage, and the minimum threshold for both the

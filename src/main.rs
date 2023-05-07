@@ -93,7 +93,7 @@ fn run_app(args: Args, command_runner: &dyn CommandRunnerTrait) -> bool {
     change_directory(args.git_dir);
 
     // Diff command
-    let cmd = String::from("git diff ") + &args.branch + " --diff-filter=d";
+    let cmd = String::from("git diff origin/") + &args.branch + " --diff-filter=d";
     println!("Running command: {cmd}");
     let diff_file_string = command_runner.run_command(&cmd);
 
