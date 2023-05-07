@@ -22,6 +22,14 @@ impl CommandRunnerTrait for CommandRunner {
             .output()
             .expect("failed to execute process");
 
+        if !output.status.success() {
+            panic!(
+                "Command failed: {}: error: {}",
+                command,
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
         match String::from_utf8(output.stdout) {
             Ok(s) => s,
             Err(e) => panic!("Invalid UTF-8 sequence: {e}"),
@@ -64,6 +72,7 @@ fn change_directory(dir: Option<String>) {
             panic!("Directory does not exist: {git_dir}");
         }
 
+        println!("Changing directory to git directory {git_dir}");
         std::env::set_current_dir(git_dir.clone())
             .unwrap_or_else(|_| panic!("Error changing directory to {git_dir}"));
     }
@@ -92,8 +101,11 @@ fn run_app(args: Args, command_runner: &dyn CommandRunnerTrait) -> bool {
 
     change_directory(args.git_dir);
 
+    // Add safe to git
+    command_runner.run_command("git config --global --add safe.directory $GITHUB_WORKSPACE");
+
     // Diff command
-    let cmd = String::from("git diff origin/") + &args.branch + " --diff-filter=d";
+    let cmd = String::from("git diff origin/") + &args.branch + " HEAD --diff-filter=d";
     println!("Running command: {cmd}");
     let diff_file_string = command_runner.run_command(&cmd);
 
@@ -160,6 +172,12 @@ mod tests {
         let command_runner = CommandRunner;
         let result = command_runner.run_command("echo test");
         assert_eq!(result.trim(), "test");
+
+        // Test non-existing command
+        assert!(
+            std::panic::catch_unwind(|| command_runner.run_command("non-existing-command"))
+                .is_err()
+        );
     }
 
     #[test]

@@ -1,0 +1,92 @@
+diff --git a/.github/workflows/ci_cd.yml b/.github/workflows/ci_cd.yml
+index 753bd67..ad33fd5 100644
+--- a/.github/workflows/ci_cd.yml
++++ b/.github/workflows/ci_cd.yml
+@@ -10,7 +10,9 @@ jobs:
+   CI-app:
+     runs-on: ubuntu-latest
+     steps:
+-      - uses: actions/checkout@v2
++      - uses: actions/checkout@v3
++        with:
++          fetch-depth: 0
+       - uses: extractions/setup-just@v1
+       - name: Setup Python
+         uses: actions/setup-python@v2
+@@ -48,18 +50,14 @@ jobs:
+           COVERAGE=$(poetry run coverage report | tail -n 1 | awk '{print $NF}')
+           echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+           poetry run coverage xml
+-      - name: Code Coverage Report
+-        uses: irongut/CodeCoverageSummary@v1.3.0
+-        with:
+-          filename: coverage.xml
+-          badge: true
+-          fail_below_min: true
+-          format: markdown
+-          hide_branch_rate: false
+-          hide_complexity: true
+-          indicators: true
+-          output: both
+-          thresholds: "60 90"
++      
++      - name: Coverage scope on new code
++        uses: dennisjensen95/coverage-scope@v0.1.2
++        with: 
++          coverage-filepath: coverage.xml
++          branch: main
++          threshold-total: 80
++          threshold-change: 90
+ 
+       - name: Create the Badge
+         uses: schneegans/dynamic-badges-action@v1.6.0
+diff --git a/src/analytics/firebase_interface.py b/src/analytics/firebase_interface.py
+index 021c8cc..af65986 100644
+--- a/src/analytics/firebase_interface.py
++++ b/src/analytics/firebase_interface.py
+@@ -1,5 +1,4 @@
+ import firebase_admin
+-import random
+ 
+ class FirebaseInterface: 
+     def __init__(self) -> bool:
+@@ -7,8 +6,8 @@ class FirebaseInterface:
+             # Random app name
+             if not firebase_admin._apps:
+                 firebase_admin.initialize_app()
+-            print(f"Successfully initialized firebase admin.")
+             self.firestore_init_app = True
++            print(f"Successfully initialized firebase admin.")
+         except Exception as e:
+-            print(f"Failed to initialize firestore publisher. No default credentials found. Error: {e}")
+             self.firestore_init_app = False
++            print(f"Failed to initialize firestore publisher. No default credentials found. Error: {e}")
+diff --git a/tests/analytics/firebase_interface_test.py b/tests/analytics/firebase_interface_test.py
+new file mode 100644
+index 0000000..6b583f9
+--- /dev/null
++++ b/tests/analytics/firebase_interface_test.py
+@@ -0,0 +1,22 @@
++import unittest
++from unittest.mock import patch, MagicMock
++
++
++# Application under test
++from src.analytics.firebase_interface import FirebaseInterface
++
++class TestFirebaseInterface(unittest.TestCase):
++    
++    @patch("firebase_admin.initialize_app") 
++    def test_init(self, init_app: MagicMock):
++        # 1 
++        # Happy case
++        init_app.return_value = MagicMock()
++        firebase_interface = FirebaseInterface()
++        self.assertTrue(firebase_interface.firestore_init_app)
++        
++        # 2
++        # Exception case 
++        init_app.side_effect = Exception("Test")
++        firebase_interface = FirebaseInterface()
++        self.assertFalse(firebase_interface.firestore_init_app)
+\ No newline at end of file

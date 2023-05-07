@@ -22,14 +22,14 @@ pub struct Coverage {
     #[serde(rename = "complexity")]
     _complexity: String,
     #[serde(rename = "sources")]
-    _sources: Sources,
+    sources: Sources,
     packages: Packages,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 struct Sources {
     #[serde(rename = "source")]
-    _source: Vec<String>,
+    source: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -59,7 +59,7 @@ struct Classes {
 #[derive(Debug, Deserialize, Clone)]
 struct Class {
     #[serde(rename = "name")]
-    _name: String,
+    name: String,
     #[serde(rename = "filename")]
     filename: String,
     #[serde(rename = "complexity")]
@@ -92,6 +92,10 @@ impl Class {
         self.filename.clone()
     }
 
+    fn get_filename(&self) -> String {
+        self.name.clone()
+    }
+
     fn get_lines_covered(&self) -> Vec<usize> {
         let mut lines_covered: Vec<usize> = Vec::new();
 
@@ -106,45 +110,25 @@ impl Class {
         }
         lines_covered
     }
+
+    fn get_all_lines(&self) -> Vec<usize> {
+        let mut all_lines: Vec<usize> = Vec::new();
+
+        for line in &self.lines.line {
+            let line_number = line.number.parse::<usize>();
+            match line_number {
+                Ok(n) => all_lines.push(n),
+                Err(e) => println!("Error: {e}"),
+            }
+        }
+        all_lines
+    }
 }
 
 // Do an implementation of the Package
 impl Package {
-    fn get_files(&self) -> Vec<String> {
-        let mut files: Vec<String> = Vec::new();
-
-        for class in &self.classes.class {
-            files.push(class.get_filepath());
-        }
-        files
-    }
-
-    fn get_lines_covered(&self, file_path: String) -> Vec<usize> {
-        let mut lines_covered: Vec<usize> = Vec::new();
-
-        for class in &self.classes.class {
-            if class.get_filepath() == file_path {
-                lines_covered.append(&mut class.get_lines_covered());
-            }
-        }
-        lines_covered
-    }
-
-    fn get_total_lines(&self, file_path: String) -> Vec<usize> {
-        let mut lines_total: Vec<usize> = Vec::new();
-
-        for class in &self.classes.class {
-            if class.get_filepath() == file_path {
-                for line in &class.lines.line {
-                    let line_number = line.number.parse::<usize>();
-                    match line_number {
-                        Ok(n) => lines_total.push(n),
-                        Err(e) => println!("Error: {e}"),
-                    }
-                }
-            }
-        }
-        lines_total
+    fn get_classes(&self) -> Vec<Class> {
+        self.classes.class.clone()
     }
 }
 
@@ -159,31 +143,61 @@ impl Coverage {
     }
 
     pub fn get_lines_covered(&self, file_path: &str) -> Vec<usize> {
-        let mut lines_covered: Vec<usize> = Vec::new();
+        let class = match self.match_filepath_to_package(file_path) {
+            Some(p) => p,
+            None => return Vec::new(),
+        };
 
-        for package in &self.packages.list_of_packages {
-            for file in package.get_files() {
-                if file == file_path {
-                    lines_covered.append(&mut package.get_lines_covered(file_path.into()));
-                }
-            }
-        }
-
-        lines_covered
+        class.get_lines_covered()
     }
 
     pub fn get_lines_with_code(&self, file_path: &str) -> Vec<usize> {
-        let mut lines_with_code: Vec<usize> = Vec::new();
+        let class = match self.match_filepath_to_package(file_path) {
+            Some(p) => p,
+            None => return Vec::new(),
+        };
+
+        class.get_all_lines()
+    }
+
+    fn match_filepath_to_package(&self, file_path: &str) -> Option<Class> {
+        let potential_prepend_paths_sources = &self.sources.source;
 
         for package in &self.packages.list_of_packages {
-            for file in package.get_files() {
-                if file == file_path {
-                    lines_with_code.append(&mut package.get_total_lines(file_path.into()));
+            for potential_path in potential_prepend_paths_sources {
+                for class in package.get_classes() {
+                    let filename = class.get_filename();
+                    let file_path_of_class = class.get_filepath();
+
+                    // First check if a source plus a filename matches the file_path
+                    let mut potential_filpath_with_filename = potential_path.clone();
+                    potential_filpath_with_filename.push('/');
+                    potential_filpath_with_filename.push_str(&filename);
+                    if potential_filpath_with_filename.contains(file_path) {
+                        return Some(class);
+                    }
+
+                    // Then check if a source plus a filepath matches the file_path
+                    let mut potential_path = potential_path.clone();
+                    potential_path.push('/');
+                    potential_path.push_str(&file_path_of_class);
+                    if potential_path.contains(file_path) {
+                        return Some(class);
+                    }
+
+                    // Then check if the filename matches the file_path
+                    if file_path_of_class == file_path {
+                        return Some(class);
+                    }
+
+                    // Then check if the filename matches the file_path
+                    if filename == file_path {
+                        return Some(class);
+                    }
                 }
             }
         }
-
-        lines_with_code
+        None
     }
 }
 
@@ -196,7 +210,7 @@ mod tests {
         let file_string = std::fs::read_to_string("assets/coberta_coverage/coverage.xml").unwrap();
         let coverage = Coverage::new(&file_string);
 
-        let files_covered = coverage.packages.list_of_packages[0].get_files();
+        let files_covered = coverage.packages.list_of_packages[0].classes.class.clone();
         assert_eq!(files_covered.len(), 2);
 
         // new.py files covered 0
@@ -213,7 +227,7 @@ mod tests {
         let file_string = std::fs::read_to_string("assets/coberta_coverage/coverage.xml").unwrap();
         let coverage = Coverage::new(&file_string);
 
-        let files_covered = coverage.packages.list_of_packages[0].get_files();
+        let files_covered = coverage.packages.list_of_packages[0].classes.class.clone();
         assert_eq!(files_covered.len(), 2);
     }
 
@@ -235,5 +249,15 @@ mod tests {
 
         let total_coverage = coverage.get_total_coverage();
         assert_eq!(total_coverage, 93.76);
+    }
+
+    #[test]
+    fn test_get_lines_with_code() {
+        let file_string =
+            std::fs::read_to_string("assets/coberta_coverage/test_1_coverage.xml").unwrap();
+        let coverage = Coverage::new(&file_string);
+
+        let lines_with_code = coverage.get_lines_with_code("src/analytics/firebase_interface.py");
+        assert_eq!(lines_with_code.len(), 11);
     }
 }

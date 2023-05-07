@@ -21,6 +21,6 @@ test-docker-actions-env:
 
 push-docker VERSION_TAG:
     docker buildx build --platform linux/amd64 -t coverage-scope-amd64 -f Dockerfile.build .
-    docker tag coverage-scope-amd64 dennisjensen95/coverage-scope:${VERSION_TAG}
-    docker push dennisjensen95/coverage-scope:${VERSION_TAG}
+    docker tag coverage-scope-amd64 dennisjensen95/coverage-scope:{{VERSION_TAG}}
+    docker push dennisjensen95/coverage-scope:{{VERSION_TAG}}
     
