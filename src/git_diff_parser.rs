@@ -20,7 +20,11 @@ impl DiffFiles {
             let file_path = patch.new.path;
 
             // Only code files
-            if !(file_path.ends_with(".rs") || file_path.ends_with(".py")) {
+            if !(file_path.ends_with(".rs")
+                || file_path.ends_with(".py")
+                || file_path.ends_with(".dart")
+                || file_path.ends_with(".go"))
+            {
                 continue;
             }
 
@@ -48,8 +52,12 @@ impl DiffFiles {
         for file in self.files.clone() {
             let file_path = file.0;
 
-            // Check if the file is a code file
-            if !(file_path.ends_with(".rs") || file_path.ends_with(".py")) {
+            // Only code files
+            if !(file_path.ends_with(".rs")
+                || file_path.ends_with(".py")
+                || file_path.ends_with(".dart")
+                || file_path.ends_with(".go"))
+            {
                 continue;
             }
 

@@ -61,6 +61,10 @@ struct Args {
     /// If not specified, the current directory is used
     #[arg(short, long)]
     git_dir: Option<String>,
+
+    /// Inside docker container
+    #[arg(long, default_value = "false")]
+    docker: bool,
 }
 
 fn change_directory(dir: Option<String>) {
@@ -102,7 +106,9 @@ fn run_app(args: Args, command_runner: &dyn CommandRunnerTrait) -> bool {
     change_directory(args.git_dir);
 
     // Add safe to git
-    command_runner.run_command("git config --global --add safe.directory $GITHUB_WORKSPACE");
+    if args.docker {
+        command_runner.run_command("git config --global --add safe.directory $GITHUB_WORKSPACE");
+    }
 
     // Diff command
     let cmd = String::from("git diff origin/") + &args.branch + " HEAD --diff-filter=d";
@@ -206,6 +212,7 @@ mod tests {
             branch: "main".to_string(),
             threshold_change: 5.0,
             threshold_total: 0.0,
+            docker: false,
         };
         let expected_fail_args_not_high_coverage = Args {
             coverage_file: "assets/coberta_coverage/repo_coverage.xml".to_string(),
@@ -213,6 +220,7 @@ mod tests {
             branch: "main".to_string(),
             threshold_change: 100.0,
             threshold_total: 0.0,
+            docker: true,
         };
 
         let expected_fail_args_fail_on_total = Args {
@@ -221,6 +229,7 @@ mod tests {
             branch: "main".to_string(),
             threshold_change: 0.0,
             threshold_total: 100.0,
+            docker: true,
         };
 
         // Diff from file

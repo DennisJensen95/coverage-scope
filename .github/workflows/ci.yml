@@ -16,7 +16,6 @@ jobs:
         with:
           fetch-depth: 0
 
-
       - name: Install latest stable
         uses: actions-rs/toolchain@v1
         with:
@@ -64,7 +63,7 @@ jobs:
           threshold-total: 80
           threshold-change: 90
       
-      - uses: dennisjensen95/coverage-scope@v0.1.2
+      - uses: dennisjensen95/coverage-scope@v0.1.4
         with: 
           coverage-filepath: cobertura.xml
           branch: main

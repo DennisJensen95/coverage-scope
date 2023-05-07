@@ -16,10 +16,12 @@ The package currently only supports the following coding languages:
 
 - Python
 - Rust
+- Golang
+- Dart
 
 These are the only languages that have been tested. However, the logic should be
-applicable for other languages. (Currently we filter on extension `.py` and
-`.rs` - so it will not work unless we change the code)
+applicable for other languages. (Currently we filter on extensions `.py`, `.rs`,
+`.go`, `.dart` - so it will not work unless we change the code)
 
 ## Usage
 
@@ -38,7 +40,7 @@ when measuring changed files coverage, and the minimum threshold for both the
 total coverage and the changed files coverage.
 
 ```yaml
-- uses: dennisjensen95/coverage-scope@v0.1.4
+- uses: dennisjensen95/coverage-scope@v0.2.0
   with: 
     coverage-filepath: cobertura.xml
     branch: main

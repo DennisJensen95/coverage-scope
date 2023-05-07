@@ -1,4 +1,4 @@
-FROM dennisjensen95/coverage-scope:v0.1.4
+FROM dennisjensen95/coverage-scope:v0.2.0
 
 COPY entrypoint.sh /entrypoint.sh
 
