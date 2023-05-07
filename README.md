@@ -38,7 +38,7 @@ when measuring changed files coverage, and the minimum threshold for both the
 total coverage and the changed files coverage.
 
 ```yaml
-- uses: dennisjensen95/coverage-scope@v0.1.0-alpha
+- uses: dennisjensen95/coverage-scope@v0.1.4
   with: 
     coverage-filepath: cobertura.xml
     branch: main
