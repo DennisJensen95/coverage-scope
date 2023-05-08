@@ -83,7 +83,8 @@ fn change_directory(dir: Option<String>) {
 }
 
 fn get_coverage_on_diff(diff_string: &str, coverage: &Coverage, threshold: f32) -> bool {
-    let diff_files = DiffFiles::new(diff_string);
+    let file_extensions_to_cover = coverage.get_file_extensions();
+    let diff_files = DiffFiles::new(diff_string, file_extensions_to_cover);
     let line_coverage_percentage = diff_files.calculate_line_coverage(coverage.clone());
     println!("Current changes coverage is {line_coverage_percentage:.2}%");
     let mut threshold_not_met = false;

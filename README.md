@@ -12,7 +12,7 @@ the project.
 
 ## Supported languages
 
-The package currently only supports the following coding languages:
+The package currently has only been tested with the following coding languages:
 
 - Python
 - Rust
@@ -20,8 +20,7 @@ The package currently only supports the following coding languages:
 - Dart
 
 These are the only languages that have been tested. However, the logic should be
-applicable for other languages. (Currently we filter on extensions `.py`, `.rs`,
-`.go`, `.dart` - so it will not work unless we change the code)
+applicable for other languages.
 
 ## Usage
 

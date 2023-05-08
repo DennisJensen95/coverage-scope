@@ -59,7 +59,7 @@ struct Classes {
 #[derive(Debug, Deserialize, Clone)]
 struct Class {
     #[serde(rename = "name")]
-    name: String,
+    _name: String,
     #[serde(rename = "filename")]
     filename: String,
     #[serde(rename = "complexity")]
@@ -93,7 +93,11 @@ impl Class {
     }
 
     fn get_filename(&self) -> String {
-        self.name.clone()
+        let filepath = self.get_filepath();
+        match filepath.split('/').last() {
+            Some(p) => String::from(p),
+            None => filepath,
+        }
     }
 
     fn get_lines_covered(&self) -> Vec<usize> {
@@ -158,6 +162,29 @@ impl Coverage {
         };
 
         class.get_all_lines()
+    }
+
+    pub fn get_file_extensions(&self) -> Vec<String> {
+        let mut file_extensions: Vec<String> = Vec::new();
+
+        for package in &self.packages.list_of_packages {
+            for class in package.get_classes() {
+                let filename = class.get_filename();
+
+                let file_extension = match filename.split('.').last() {
+                    Some(p) => p,
+                    None => continue,
+                };
+
+                let extension = format!(".{}", file_extension);
+
+                if !file_extensions.contains(&extension.to_string()) {
+                    // Push file extension and prepend a . to it
+                    file_extensions.push(extension);
+                }
+            }
+        }
+        file_extensions
     }
 
     fn match_filepath_to_package(&self, file_path: &str) -> Option<Class> {
@@ -259,5 +286,17 @@ mod tests {
 
         let lines_with_code = coverage.get_lines_with_code("src/analytics/firebase_interface.py");
         assert_eq!(lines_with_code.len(), 11);
+    }
+
+    #[test]
+    fn test_get_file_extensions() {
+        let file_string =
+            std::fs::read_to_string("assets/coberta_coverage/test_1_coverage.xml").unwrap();
+        let coverage = Coverage::new(&file_string);
+
+        let file_extensions = coverage.get_file_extensions();
+        println!("{:?}", file_extensions);
+        assert_eq!(file_extensions.len(), 1);
+        assert_eq!(file_extensions[0], ".py");
     }
 }

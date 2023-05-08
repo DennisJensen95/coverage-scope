@@ -4,27 +4,27 @@ use crate::coberta_xml_parser::Coverage;
 
 pub struct DiffFiles {
     pub files: Vec<(String, Vec<usize>)>,
+    file_extensions: Vec<String>,
 }
 
 impl DiffFiles {
-    pub fn new(diff_file_string: &str) -> DiffFiles {
+    pub fn new(diff_file_string: &str, file_extensions: Vec<String>) -> DiffFiles {
         // Parse the diff file and return file paths and line numbers changed
         let patches = match Patch::from_multiple(diff_file_string) {
             Ok(p) => p,
             Err(e) => panic!("Error parsing diff file: {e}"),
         };
 
-        let mut files_changed = DiffFiles { files: Vec::new() };
+        let mut files_changed = DiffFiles {
+            files: Vec::new(),
+            file_extensions: file_extensions.clone(),
+        };
 
         for patch in patches {
             let file_path = patch.new.path;
 
             // Only code files
-            if !(file_path.ends_with(".rs")
-                || file_path.ends_with(".py")
-                || file_path.ends_with(".dart")
-                || file_path.ends_with(".go"))
-            {
+            if !file_extensions.iter().any(|ext| file_path.ends_with(ext)) {
                 continue;
             }
 
@@ -53,10 +53,10 @@ impl DiffFiles {
             let file_path = file.0;
 
             // Only code files
-            if !(file_path.ends_with(".rs")
-                || file_path.ends_with(".py")
-                || file_path.ends_with(".dart")
-                || file_path.ends_with(".go"))
+            if !self
+                .file_extensions
+                .iter()
+                .any(|ext| file_path.ends_with(ext))
             {
                 continue;
             }
@@ -95,7 +95,7 @@ mod tests {
         let diff_file_string = std::fs::read_to_string("assets/diff_files/coverage.diff")
             .expect("Unable to read file");
 
-        let diff_files = DiffFiles::new(&diff_file_string);
+        let diff_files = DiffFiles::new(&diff_file_string, vec![".py".to_string()]);
 
         assert_eq!(diff_files.files.len(), 2);
 
@@ -113,7 +113,7 @@ mod tests {
         let diff_file_string =
             std::fs::read_to_string("assets/diff_files/tricky.diff").expect("Unable to read file");
 
-        let diff_files = DiffFiles::new(&diff_file_string);
+        let diff_files = DiffFiles::new(&diff_file_string, vec![".rs".to_string()]);
 
         assert_eq!(diff_files.files.len(), 1);
 
