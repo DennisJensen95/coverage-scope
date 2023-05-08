@@ -32,10 +32,9 @@ jobs:
           nix-channel --add https://nixos.org/channels/nixpkgs-unstable
           nix-channel --update
           nix-env -iA nixpkgs.just
+          nix-env -iA nixpkgs.xmlstarlet
+          nix-env -iA nixpkgs.cargo-tarpaulin
       
-      - name: Install xmlstarlet
-        run: sudo apt-get install xmlstarlet
-
       - name: Lint code
         run: just lint
         env:
@@ -54,22 +53,12 @@ jobs:
         env:
           CARGO_TERM_COLOR: always
       
-      - name: Coverage scope action main
-        uses: ./ # Uses an action in the root directory
-        id: coverage
+      - name: Upload file
+        uses: actions/upload-artifact@v2
         with:
-          coverage-filepath: cobertura.xml
-          branch: main
-          threshold-total: 80
-          threshold-change: 90
+          name: coverage-file
+          path: cobertura.xml
       
-      - uses: dennisjensen95/coverage-scope@v0.1.4
-        with: 
-          coverage-filepath: cobertura.xml
-          branch: main
-          threshold-total: 80
-          threshold-change: 90          
-
       - name: Create the Badge
         if: github.ref == 'refs/heads/main'
         uses: schneegans/dynamic-badges-action@v1.6.0
@@ -80,3 +69,53 @@ jobs:
           label: Test Coverage
           message: ${{ env.COVERAGE }}
           color: green
+  
+  run-action:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install latest stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      
+      - name: Download coverage
+        uses: actions/download-artifact@v2
+        with:
+          name: coverage-file
+      
+      - name: Coverage scope action main
+        uses: ./ # Uses an action in the root directory
+        id: coverage
+        with:
+          coverage-filepath: cobertura.xml
+          branch: main
+          threshold-total: 80
+          threshold-change: 90
+  
+  fetch-action:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Download coverage
+        uses: actions/download-artifact@v2
+        with:
+          name: coverage-file
+
+      - uses: dennisjensen95/coverage-scope@v0.1.4
+        with: 
+          coverage-filepath: cobertura.xml
+          branch: main
+          threshold-total: 80
+          threshold-change: 90
