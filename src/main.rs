@@ -1,41 +1,12 @@
 use clap::Parser;
 
 mod coberta_xml_parser;
+mod command_runner;
 mod git_diff_parser;
 
 use coberta_xml_parser::Coverage;
+use command_runner::{CommandRunner, CommandRunnerTrait};
 use git_diff_parser::DiffFiles;
-use mockall::*;
-
-struct CommandRunner;
-
-#[automock]
-pub trait CommandRunnerTrait {
-    fn run_command(&self, command: &str) -> String;
-}
-
-impl CommandRunnerTrait for CommandRunner {
-    fn run_command(&self, command: &str) -> String {
-        let output = std::process::Command::new("bash")
-            .arg("-c")
-            .arg(command)
-            .output()
-            .expect("failed to execute process");
-
-        if !output.status.success() {
-            panic!(
-                "Command failed: {}: error: {}",
-                command,
-                String::from_utf8_lossy(&output.stderr)
-            );
-        }
-
-        match String::from_utf8(output.stdout) {
-            Ok(s) => s,
-            Err(e) => panic!("Invalid UTF-8 sequence: {e}"),
-        }
-    }
-}
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -153,7 +124,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::MockCommandRunnerTrait;
+    use super::command_runner::MockCommandRunnerTrait;
     use super::*;
 
     #[test]
@@ -171,19 +142,6 @@ mod tests {
                 "non-existing-directory"
             ))))
             .is_err()
-        );
-    }
-
-    #[test]
-    fn test_run_command() {
-        let command_runner = CommandRunner;
-        let result = command_runner.run_command("echo test");
-        assert_eq!(result.trim(), "test");
-
-        // Test non-existing command
-        assert!(
-            std::panic::catch_unwind(|| command_runner.run_command("non-existing-command"))
-                .is_err()
         );
     }
 
