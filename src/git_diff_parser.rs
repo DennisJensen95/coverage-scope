@@ -46,6 +46,26 @@ impl DiffFiles {
         files_changed
     }
 
+    fn count_lines_covered(
+        &self,
+        lines_changed: Vec<usize>,
+        lines_covered: Vec<usize>,
+        lines_with_code: Vec<usize>,
+    ) -> (usize, usize) {
+        let mut lines_covered_count = 0;
+        let mut total_lines_changed_with_code = 0;
+        for line in &lines_changed {
+            if lines_with_code.contains(line) {
+                total_lines_changed_with_code += 1;
+                if lines_covered.contains(line) {
+                    lines_covered_count += 1;
+                }
+            }
+        }
+
+        (lines_covered_count, total_lines_changed_with_code)
+    }
+
     pub fn calculate_line_coverage(&self, coverage: Coverage) -> f32 {
         let mut total_lines_changed = 0;
         let mut total_lines_covered = 0;
@@ -65,18 +85,8 @@ impl DiffFiles {
             let lines_covered = coverage.get_lines_covered(file_path.as_str());
             let lines_with_code = coverage.get_lines_with_code(file_path.as_str());
 
-            // Count the lines covered out the lines changed
-            let mut lines_covered_count = 0;
-            let mut total_lines_changed_with_code = 0;
-            for line in &lines_changed {
-                if lines_covered.contains(line) {
-                    lines_covered_count += 1;
-                }
-
-                if lines_with_code.contains(line) {
-                    total_lines_changed_with_code += 1;
-                }
-            }
+            let (lines_covered_count, total_lines_changed_with_code) =
+                self.count_lines_covered(lines_changed, lines_covered, lines_with_code);
 
             total_lines_changed += total_lines_changed_with_code;
             total_lines_covered += lines_covered_count;
@@ -123,5 +133,36 @@ mod tests {
         }
 
         assert_eq!(total_lines_changed, 215);
+    }
+
+    #[test]
+    fn test_count_lines_covered() {
+        let diff_files = DiffFiles {
+            files: Vec::new(),
+            file_extensions: Vec::new(),
+        };
+
+        // 1
+        // Lines with code covers all lines
+        let lines_changed = vec![1, 3, 5];
+        let lines_covered = vec![1, 2, 5];
+        let lines_with_code = vec![1, 2, 3, 4, 5];
+
+        let result = diff_files.count_lines_covered(lines_changed, lines_covered, lines_with_code);
+
+        assert_eq!(result.0, 2);
+        assert_eq!(result.1, 3);
+
+        // 2
+        // Lines with code only covers some of the changed lines
+        let lines_changed_2 = vec![1, 3, 5];
+        let lines_covered_2 = vec![1, 2, 5];
+        let lines_with_code_2 = vec![1, 2, 3];
+
+        let (lines_covered_count, total_lines_changed_with_code) =
+            diff_files.count_lines_covered(lines_changed_2, lines_covered_2, lines_with_code_2);
+
+        assert_eq!(lines_covered_count, 1);
+        assert_eq!(total_lines_changed_with_code, 2);
     }
 }
