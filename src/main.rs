@@ -2,10 +2,12 @@ use clap::Parser;
 
 mod coberta_xml_parser;
 mod command_runner;
+mod coverage_converter;
 mod git_diff_parser;
 
 use coberta_xml_parser::Coverage;
 use command_runner::{CommandRunner, CommandRunnerTrait};
+use coverage_converter::CoverageConverter;
 use git_diff_parser::DiffFiles;
 
 /// Simple program to greet a person
@@ -71,10 +73,6 @@ fn get_coverage_on_diff(diff_string: &str, coverage: &Coverage, threshold: f32) 
 }
 
 fn run_app(args: Args, command_runner: &dyn CommandRunnerTrait) -> bool {
-    // Format string
-    let file_string = std::fs::read_to_string(&args.coverage_file)
-        .unwrap_or_else(|_| panic!("Error reading file {}", args.coverage_file));
-
     change_directory(args.git_dir);
 
     // Add safe to git
@@ -88,7 +86,8 @@ fn run_app(args: Args, command_runner: &dyn CommandRunnerTrait) -> bool {
     let diff_file_string = command_runner.run_command(&cmd);
 
     // Parse diff file
-    let coverage: Coverage = Coverage::new(&file_string);
+    let coverage_file_converter = CoverageConverter::new(&args.coverage_file);
+    let coverage: Coverage = Coverage::new(&coverage_file_converter.convert_to_cobertura());
     let mut threshold_not_met = false;
 
     if !diff_file_string.is_empty() {
