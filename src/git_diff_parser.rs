@@ -88,6 +88,18 @@ impl DiffFiles {
             let (lines_covered_count, total_lines_changed_with_code) =
                 self.count_lines_covered(lines_changed, lines_covered, lines_with_code);
 
+            if total_lines_changed_with_code == 0 {
+                continue;
+            }
+
+            let percentage_covered = format!(
+                "{:.2}",
+                lines_covered_count as f32 / total_lines_changed_with_code as f32 * 100.0,
+            );
+
+            println!("  File changed: {file_path}");
+            println!("  Lines changed: {lines_covered_count}/{total_lines_changed_with_code}: {percentage_covered}‰",);
+
             total_lines_changed += total_lines_changed_with_code;
             total_lines_covered += lines_covered_count;
         }

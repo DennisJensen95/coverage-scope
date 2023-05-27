@@ -59,6 +59,8 @@ fn get_coverage_on_diff(diff_string: &str, coverage: &Coverage, threshold: f32) 
     let file_extensions_to_cover = coverage.get_file_extensions();
     let diff_files = DiffFiles::new(diff_string, file_extensions_to_cover);
     let line_coverage_percentage = diff_files.calculate_line_coverage(coverage.clone());
+
+    println!("\n --- \n");
     println!("Current changes coverage is {line_coverage_percentage:.2}%");
     let mut threshold_not_met = false;
     if line_coverage_percentage < threshold {
@@ -83,6 +85,8 @@ fn run_app(args: Args, command_runner: &dyn CommandRunnerTrait) -> bool {
     // Diff command
     let cmd = String::from("git diff origin/") + &args.branch + " HEAD --diff-filter=d";
     println!("Running command: {cmd}");
+    println!("\n --- \n");
+    println!("Files changed:");
     let diff_file_string = command_runner.run_command(&cmd);
 
     // Parse diff file
