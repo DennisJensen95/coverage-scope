@@ -26,6 +26,10 @@
 						<line number="6" hits="0"/>
 					</lines>
 				</class>
+				<class name="some_other_module.py" filename="test_repo/some_other_module.py" complexity="0" line-rate="0.2" branch-rate="0">
+					<methods/>
+					<lines/>
+				</class>
 			</classes>
 		</package>
 	</packages>

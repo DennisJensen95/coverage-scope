@@ -78,7 +78,7 @@ struct Methods {}
 
 #[derive(Debug, Deserialize, Clone)]
 struct Lines {
-    line: Vec<Line>,
+    line: Option<Vec<Line>>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -103,7 +103,11 @@ impl Class {
     fn get_lines_covered(&self) -> Vec<usize> {
         let mut lines_covered: Vec<usize> = Vec::new();
 
-        for line in &self.lines.line {
+        if self.lines.line.is_none() {
+            return lines_covered;
+        }
+
+        for line in &self.lines.line.clone().unwrap() {
             if line.hits != "0" {
                 let line_number = line.number.parse::<usize>();
                 match line_number {
@@ -118,7 +122,11 @@ impl Class {
     fn get_all_lines(&self) -> Vec<usize> {
         let mut all_lines: Vec<usize> = Vec::new();
 
-        for line in &self.lines.line {
+        if self.lines.line.is_none() {
+            return all_lines;
+        }
+
+        for line in &self.lines.line.clone().unwrap() {
             let line_number = line.number.parse::<usize>();
             match line_number {
                 Ok(n) => all_lines.push(n),
@@ -238,7 +246,7 @@ mod tests {
         let coverage = Coverage::new(&file_string);
 
         let files_covered = coverage.packages.list_of_packages[0].classes.class.clone();
-        assert_eq!(files_covered.len(), 2);
+        assert_eq!(files_covered.len(), 3);
 
         // new.py files covered 0
         let lines_covered = coverage.get_lines_covered("test_repo/new.py");
@@ -255,7 +263,7 @@ mod tests {
         let coverage = Coverage::new(&file_string);
 
         let files_covered = coverage.packages.list_of_packages[0].classes.class.clone();
-        assert_eq!(files_covered.len(), 2);
+        assert_eq!(files_covered.len(), 3);
     }
 
     #[test]
