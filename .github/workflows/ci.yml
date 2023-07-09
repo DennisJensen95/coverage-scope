@@ -113,7 +113,7 @@ jobs:
         with:
           name: coverage-file
 
-      - uses: dennisjensen95/coverage-scope@v0.1.4
+      - uses: dennisjensen95/coverage-scope@v0.3.2
         with: 
           coverage-filepath: cobertura.xml
           branch: main
