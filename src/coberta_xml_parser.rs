@@ -53,7 +53,7 @@ struct Package {
 
 #[derive(Debug, Deserialize, Clone)]
 struct Classes {
-    class: Vec<Class>,
+    class: Option<Vec<Class>>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -140,7 +140,10 @@ impl Class {
 // Do an implementation of the Package
 impl Package {
     fn get_classes(&self) -> Vec<Class> {
-        self.classes.class.clone()
+        if self.classes.class.is_none() {
+            return Vec::new();
+        }
+        self.classes.class.clone().unwrap()
     }
 }
 
@@ -246,7 +249,10 @@ mod tests {
         let coverage = Coverage::new(&file_string);
 
         let files_covered = coverage.packages.list_of_packages[0].classes.class.clone();
-        assert_eq!(files_covered.len(), 3);
+        assert_eq!(
+            files_covered.expect("Could not unwrap files covered").len(),
+            3
+        );
 
         // new.py files covered 0
         let lines_covered = coverage.get_lines_covered("test_repo/new.py");
@@ -263,7 +269,10 @@ mod tests {
         let coverage = Coverage::new(&file_string);
 
         let files_covered = coverage.packages.list_of_packages[0].classes.class.clone();
-        assert_eq!(files_covered.len(), 3);
+        assert_eq!(
+            files_covered.expect("Could not unwrap files covered").len(),
+            3
+        );
     }
 
     #[test]

@@ -8,7 +8,7 @@ pub struct DiffFiles {
 }
 
 impl DiffFiles {
-    pub fn new(diff_file_string: &str, file_extensions: Vec<String>) -> DiffFiles {
+    pub fn new(diff_file_string: &str, file_extensions: Vec<String>) -> Self {
         // Parse the diff file and return file paths and line numbers changed
         let patches = match Patch::from_multiple(diff_file_string) {
             Ok(p) => p,
