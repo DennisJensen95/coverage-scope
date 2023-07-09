@@ -520,8 +520,7 @@ checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
 [[package]]
 name = "patch"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15c07fdcdd8b05bdcf2a25bc195b6c34cbd52762ada9dba88bf81e7686d14e7a"
+source = "git+https://github.com/DennisJensen95/git-patch-parser#1f426fcb6e5745368ba0e696081624f479963a94"
 dependencies = [
  "chrono",
  "nom",
