@@ -1,6 +1,5 @@
-use patch::Patch;
-
 use crate::coberta_xml_parser::Coverage;
+use crate::git_patch_parser::parse_patch_string;
 
 pub struct DiffFiles {
     pub files: Vec<(String, Vec<usize>)>,
@@ -10,10 +9,7 @@ pub struct DiffFiles {
 impl DiffFiles {
     pub fn new(diff_file_string: &str, file_extensions: Vec<String>) -> Self {
         // Parse the diff file and return file paths and line numbers changed
-        let patches = match Patch::from_multiple(diff_file_string) {
-            Ok(p) => p,
-            Err(e) => panic!("Error parsing diff file: {e}"),
-        };
+        let patches = parse_patch_string(diff_file_string);
 
         let mut files_changed = DiffFiles {
             files: Vec::new(),
@@ -21,7 +17,7 @@ impl DiffFiles {
         };
 
         for patch in patches {
-            let file_path = patch.new.path;
+            let file_path = patch.file_path;
 
             // Only code files
             if !file_extensions.iter().any(|ext| file_path.ends_with(ext)) {
@@ -31,14 +27,11 @@ impl DiffFiles {
             let mut lines_changed: Vec<usize> = Vec::new();
 
             for hunk in patch.hunks {
-                let line_range = hunk.new_range;
+                let line_range = hunk.new;
                 for line_number in line_range.start..line_range.start + line_range.count {
                     lines_changed.push(line_number as usize);
                 }
             }
-
-            // Remove b/ from the start of the file path
-            let file_path = file_path[2..].to_string();
 
             files_changed.files.push((file_path, lines_changed));
         }
