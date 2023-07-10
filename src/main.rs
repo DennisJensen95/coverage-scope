@@ -167,6 +167,21 @@ mod tests {
     }
 
     #[test]
+    fn test_get_coverage_on_diff_ler_gml() {
+        // Set up sample input data
+        let diff_string =
+            std::fs::read_to_string("assets/diff_files/ler_gml_backend.diff").unwrap();
+        let coverage_string =
+            std::fs::read_to_string("assets/coberta_coverage/ler_gml_backend_coverage.xml")
+                .unwrap();
+        let coverage = Coverage::new(&coverage_string);
+
+        // Test with threshold above actual coverage
+        let result2 = get_coverage_on_diff(diff_string.as_str(), &coverage, 90.0);
+        assert!(!result2);
+    }
+
+    #[test]
     fn test_run_app() {
         // Set up sample input data
         let expected_success_args = Args {

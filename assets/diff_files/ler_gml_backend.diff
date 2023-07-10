@@ -1,0 +1,263 @@
+diff --git a/.github/workflows/ci_cd.yml b/.github/workflows/ci_cd.yml
+index 26a1a52..a116eaa 100644
+--- a/.github/workflows/ci_cd.yml
++++ b/.github/workflows/ci_cd.yml
+@@ -52,7 +52,7 @@ jobs:
+           poetry run coverage xml
+       
+       - name: Coverage scope on new code
+-        uses: dennisjensen95/coverage-scope@v0.2.0
++        uses: dennisjensen95/coverage-scope@v0.4.0
+         with: 
+           coverage-filepath: coverage.xml
+           branch: main
+diff --git a/src/dxf_builder/dxf_builder.py b/src/dxf_builder/dxf_builder.py
+index 0bd2b72..d327b6d 100644
+--- a/src/dxf_builder/dxf_builder.py
++++ b/src/dxf_builder/dxf_builder.py
+@@ -6,6 +6,7 @@ import io
+ import ezdxf
+ from ezdxf.layouts.layout import Modelspace
+ from ezdxf.document import Drawing
++from ezdxf.lldxf.types import DXFTag
+ 
+ # Application libraries
+ import parse_gml.parser as parser
+@@ -22,6 +23,14 @@ class DXFBuilder:
+         self.build_lines = build_lines
+         self.build_graveforespoergsel = build_graveforespoergsel
+         self.coordinates_placed = []
++        
++        # Create doc
++        self.doc = ezdxf.new("R2004")
++        self.app_id_name = "LER_CONVERSION"
++        self.app_id = self.doc.appids.new(self.app_id_name)
++        
++        # Model space when a drawing is created
++        self.msp = None
+     
+     def create_layers(self, ler_data: LER, doc: Drawing) -> bool:
+         layers_to_create = ler_data.get_layers(self.is_feature_flagged)
+@@ -58,23 +67,25 @@ class DXFBuilder:
+         
+         return True, coordinates_placed, meta_data
+ 
+-    def add_point_to_model(self, point: SinglePoint, msp: Modelspace, layer_name: str, coordinates_placed: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
++    def add_point_to_model(self, point: SinglePoint, msp: Modelspace, layer_name: str, coordinates_placed: List[Tuple[float, float]], xdata: Dict[str, str]) -> List[Tuple[float, float]]:
+         point_coordinates = point.get_3d_coordinates_tuple_list()
+-        # print(point_coordinates)
+-        msp.add_point(point_coordinates[0], dxfattribs={'layer': layer_name})
++        entity = msp.add_point(point_coordinates[0], dxfattribs={'layer': layer_name})
++        self.set_xdata_on_entity(entity, xdata, layer_name)
+         coordinates_placed.extend(point_coordinates)
+         return coordinates_placed
+ 
+-    def add_line_to_model(self, line: Line, msp: Modelspace, layer_name: str, coordinates_placed: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
++    def add_line_to_model(self, line: Line, msp: Modelspace, layer_name: str, coordinates_placed: List[Tuple[float, float]], xdata: Dict[str, str]) -> List[Tuple[float, float]]:
+         polyline_coordinates = line.get_3d_coordinates_tuple_list()
++        entity = msp.add_polyline3d(polyline_coordinates, dxfattribs={'layer': layer_name})  
++        self.set_xdata_on_entity(entity, xdata, layer_name)
+         coordinates_placed.extend(polyline_coordinates)
+-        msp.add_polyline3d(polyline_coordinates, dxfattribs={'layer': layer_name})  
+         return coordinates_placed
+ 
+-    def add_polygon_to_model(self, polygon: Polygon, msp: Modelspace, layer_name: str, coordinates_placed: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
++    def add_polygon_to_model(self, polygon: Polygon, msp: Modelspace, layer_name: str, coordinates_placed: List[Tuple[float, float]], xdata: Dict[str, str]) -> List[Tuple[float, float]]:
+         polygon_coordinates = polygon.get_3d_coordinates_tuple_list()
++        entity = msp.add_polyline3d(polygon_coordinates, dxfattribs={'layer': layer_name, 'linetype': 'DASHED'})
++        self.set_xdata_on_entity(entity, xdata, layer_name)
+         coordinates_placed.extend(polygon_coordinates)
+-        msp.add_polyline3d(polygon_coordinates, dxfattribs={'layer': layer_name, 'linetype': 'DASHED'})
+         return coordinates_placed
+ 
+     def add_line_types(self, doc: Drawing):
+@@ -84,40 +95,48 @@ class DXFBuilder:
+             description="Dashed line",
+         )
+ 
++    def set_xdata_on_entity(self, entity, xdata: Dict[str, str], layer_name: str):
++        dxf_tags = [DXFTag(1003, layer_name)]
++        for key, value in xdata.items():
++            dxf_tags.append(DXFTag(1000, f"{key}: {value}"))
++            
++        entity.set_xdata(self.app_id_name, dxf_tags)
++
+     def draw_geometry_on_dxf(self, element, msp: Modelspace, coordinates_placed: List[Tuple[float, float]]):
+         if not self.is_feature_flagged(element.get_ler_type()):
+             return coordinates_placed
+         
+         geometry = element.geometri.return_geometri()
++        xdata = element.get_dictionary_elements()
+         if isinstance(geometry, Line):
+-            coordinates_placed = self.add_line_to_model(geometry, msp, element.get_layer_name(), coordinates_placed)
++            coordinates_placed = self.add_line_to_model(geometry, msp, element.get_layer_name(), coordinates_placed, xdata)
+         elif isinstance(geometry, SinglePoint):
+-            coordinates_placed = self.add_point_to_model(geometry, msp, element.get_layer_name(), coordinates_placed)
++            coordinates_placed = self.add_point_to_model(geometry, msp, element.get_layer_name(), coordinates_placed, xdata)
+         elif isinstance(geometry, MultiCurve):
+-            coordinates_placed = self.add_line_to_model(geometry, msp, element.get_layer_name(), coordinates_placed)
++            coordinates_placed = self.add_line_to_model(geometry, msp, element.get_layer_name(), coordinates_placed, xdata)
+         elif isinstance(geometry, Polygon) or isinstance(geometry, Surface):
+             if hasattr(element, "komponent") and element.komponent:
+                 for element_komponent_position in geometry.get_3d_coordinates_tuple_list():
+                     _point = Point(x=element_komponent_position[0], y=element_komponent_position[1], z=element_komponent_position[2])
+-                    coordinates_placed = self.add_point_to_model(SinglePoint(**{"gml:pos": _point}), msp, element.get_layer_name(), coordinates_placed)
++                    coordinates_placed = self.add_point_to_model(SinglePoint(**{"gml:pos": _point}), msp, element.get_layer_name(), coordinates_placed, xdata)
+             else:   
+-                coordinates_placed = self.add_polygon_to_model(geometry, msp, element.get_layer_name(), coordinates_placed)
++                coordinates_placed = self.add_polygon_to_model(geometry, msp, element.get_layer_name(), coordinates_placed, xdata)
+         
+         return coordinates_placed
+         
+     def make_dxf_file(self, file: str) -> Tuple[Drawing, Dict]:
+-        doc = ezdxf.new("R2004")
+         
+-        self.add_line_types(doc)
++        self.add_line_types(self.doc)
+ 
+-        msp = doc.modelspace()
++        msp = self.doc.modelspace()
+         feature_elements = parser.parse_gml(file)
++        self.msp = msp
+         
+         if feature_elements is None:
+             print("Failed to parse GML file.")
+             return None, None
+ 
+-        state = self.create_layers(feature_elements, doc)
++        state = self.create_layers(feature_elements, self.doc)
+         if not state:
+             print("Failed to create layers.")
+             return None, None
+@@ -134,9 +153,9 @@ class DXFBuilder:
+         wires_bounding_box = calculate_bounding_box(coordinates_placed)
+         height = wires_bounding_box[3] - wires_bounding_box[1]
+         bounding_box_center = calculate_center(wires_bounding_box)
+-        doc.set_modelspace_vport(height=height, center=bounding_box_center)
++        self.doc.set_modelspace_vport(height=height, center=bounding_box_center)
+         
+-        return doc, additional_data
++        return self.doc, additional_data
+         
+     def build_dxf_string(self, file: str) -> Tuple[str, Dict]:
+         doc, additional_data = self.make_dxf_file(file)
+@@ -165,4 +184,4 @@ class DXFBuilder:
+         elif ler_type == LERType.KOMPONENT and self.build_komponenter:
+             return True
+         
+-        return False
+\ No newline at end of file
++        return False
+diff --git a/src/parse_gml/common_models.py b/src/parse_gml/common_models.py
+index 420d5eb..d479da8 100644
+--- a/src/parse_gml/common_models.py
++++ b/src/parse_gml/common_models.py
+@@ -40,6 +40,9 @@ class BaseParserModel(BaseModel):
+             return None
+         else:
+             return value
++        
++    def get_dictionary_elements(self):
++        return {k: v for k, v in self.__dict__.items() if isinstance(v, str)}
+ 
+ class LERType(Enum):
+     KOMPONENT = 1
+diff --git a/src/parse_gml/ler_models.py b/src/parse_gml/ler_models.py
+index 03ac3cc..30c69e1 100644
+--- a/src/parse_gml/ler_models.py
++++ b/src/parse_gml/ler_models.py
+@@ -29,7 +29,6 @@ class FeatureMember(BaseModel):
+     ledningstrace: Optional[LedningsTrace] = Field(alias='ler:Ledningstrace')
+     telekommunikationskomponent: Optional[TelekommunikationsKomponent] = Field(alias='ler:Telekommunikationskomponent')
+     
+-    
+     def return_populated_property(self):
+         element_types = [
+             self.afloebsledning, 
+diff --git a/tests/dxf_builder_test.py b/tests/dxf_builder_test.py
+index 7c36d11..bdb911d 100644
+--- a/tests/dxf_builder_test.py
++++ b/tests/dxf_builder_test.py
+@@ -5,7 +5,7 @@ import xmltodict
+ # Helper packages
+ from ler_components_xml import RandomLERComponents
+ from src.parse_gml.ler_models import LER
+-from src.parse_gml.common_models import LERType
++from ezdxf.lldxf.types import DXFTag
+ 
+ # Package under test
+ from src.dxf_builder.dxf_builder import DXFBuilder
+@@ -71,10 +71,8 @@ class TestBuildDXF(unittest.TestCase):
+         dxf_builder = DXFBuilder(build_komponenter=True, build_graveforespoergsel=True, build_lines=True)
+         
+         state, _, additional_data = dxf_builder.create_dxf_model(self.feature_collection_3, msp_mock)
+-        print(f"Additional data {additional_data}")
+         self.assertTrue(state)
+         self.assertEqual(additional_data["file_name"], "graveforspoergsel_23017.dxf")
+-        print(additional_data)
+         self.assertEqual(additional_data["farlige_ledninger"], False)
+         self.assertEqual(additional_data["graveperiode_fra_dato"], "2023-02-24")
+         self.assertEqual(additional_data["graveperiode_til_dato"], "2023-05-12")
+@@ -95,7 +93,7 @@ class TestBuildDXF(unittest.TestCase):
+         dxf_builder = DXFBuilder(build_komponenter=True, build_graveforespoergsel=True, build_lines=True)
+         
+         msp_mock = MagicMock()
+-        dxf_builder.add_point_to_model(feature_element.geometri.point, msp_mock, "Layer1", [])
++        dxf_builder.add_point_to_model(feature_element.geometri.point, msp_mock, "Layer1", [], {})
+         msp_mock.add_point.assert_called_with((feature_element.geometri.point.position.x, feature_element.geometri.point.position.y, feature_element.geometri.point.position.z), dxfattribs={'layer': 'Layer1'})
+     
+     def test_add_line_to_model(self):
+@@ -103,7 +101,7 @@ class TestBuildDXF(unittest.TestCase):
+         dxf_builder = DXFBuilder(build_komponenter=True, build_graveforespoergsel=True, build_lines=True)
+         
+         msp_mock = MagicMock()
+-        dxf_builder.add_line_to_model(feature_element.geometri.line, msp_mock, 'Layer1', [])
++        dxf_builder.add_line_to_model(feature_element.geometri.line, msp_mock, 'Layer1', [], {})
+         msp_mock.add_polyline3d.assert_called_with(feature_element.geometri.line.pos_list.get_3d_coordinates_tuple_list(), dxfattribs={'layer': 'Layer1'})
+         
+     def test_add_polygon_to_model(self):
+@@ -111,7 +109,7 @@ class TestBuildDXF(unittest.TestCase):
+         dxf_builder = DXFBuilder(build_komponenter=True, build_graveforespoergsel=True, build_lines=True)
+         
+         msp_mock = MagicMock()
+-        dxf_builder.add_polygon_to_model(feature_element.geometri.polygon, msp_mock, 'Layer1', [])
++        dxf_builder.add_polygon_to_model(feature_element.geometri.polygon, msp_mock, 'Layer1', [], {})
+         msp_mock.add_polyline3d.assert_called_with(feature_element.geometri.polygon.exterior.linear_ring.pos_list.get_3d_coordinates_tuple_list(), dxfattribs={'layer': 'Layer1', 'linetype': 'DASHED'})
+         
+     def test_add_line_types(self):
+@@ -138,7 +136,7 @@ class TestBuildDXF(unittest.TestCase):
+         dxf_builder.draw_geometry_on_dxf(feature_element, msp_mock, [])
+         msp_mock.add_point.assert_called_with(feature_element.geometri.return_geometri().get_3d_coordinates_tuple_list()[-1], dxfattribs={'layer': feature_element.get_layer_name()})
+ 
+-    @patch('src.parse_gml.parser')
++    @patch('src.parse_gml.parser.parse_gml')
+     @patch('src.dxf_builder.dxf_builder.DXFBuilder.create_dxf_model')
+     @patch('ezdxf.new')
+     @patch('src.dxf_builder.dxf_builder.DXFBuilder.create_layers')
+@@ -211,6 +209,21 @@ class TestBuildDXF(unittest.TestCase):
+         with open(file, 'r') as f:
+             file_string = f.read()
+             dxf_builder.build_dxf_string(file_string)
+-            coordinates_placed_no_line = dxf_builder.coordinates_placed
+-            
+-        self.assertTrue(len(coordinates_placed_no_filter) != len(coordinates_placed_no_line))
+\ No newline at end of file
++        
++        coordinates_placed_no_line = dxf_builder.coordinates_placed
++        self.assertTrue(len(coordinates_placed_no_filter) != len(coordinates_placed_no_line))
++        
++        # Check the graveforespoergsel entity if xdata matches
++        graveforespoergsel = dxf_builder.msp[0]
++        xdata = graveforespoergsel.get_xdata(dxf_builder.app_id_name)
++        
++        # Check layer name matches
++        self.assertEqual(xdata[0].value, "GRAVEFORESPOERGSEL")
++        self.assertEqual(xdata[2].value, "object_type: lergml:Graveforesp")
++        self.assertEqual(xdata[3].value, "graveperiode_fra: 2023-05-15")
++        
++        # Make sure all entities have xdata
++        for entity in dxf_builder.msp:
++            if not entity.has_xdata(dxf_builder.app_id_name):
++                self.assertTrue(False, "An entity is missing xdata")
++                
+\ No newline at end of file

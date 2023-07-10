@@ -24,14 +24,7 @@ impl DiffFiles {
                 continue;
             }
 
-            let mut lines_changed: Vec<usize> = Vec::new();
-
-            for hunk in patch.hunks {
-                let line_range = hunk.new;
-                for line_number in line_range.start..line_range.start + line_range.count {
-                    lines_changed.push(line_number as usize);
-                }
-            }
+            let lines_changed = patch.changed_lines;
 
             files_changed.files.push((file_path, lines_changed));
         }
@@ -120,7 +113,7 @@ mod tests {
         let line_coverage = diff_files.calculate_line_coverage(coverage);
 
         // We only changed 4 lines of code and half of them are covered
-        assert_eq!(line_coverage, 50.0);
+        assert_eq!(line_coverage, 40.0);
     }
 
     #[test]
@@ -137,7 +130,7 @@ mod tests {
             total_lines_changed += file.1.len();
         }
 
-        assert_eq!(total_lines_changed, 215);
+        assert_eq!(total_lines_changed, 147);
     }
 
     #[test]

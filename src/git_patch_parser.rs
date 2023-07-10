@@ -11,7 +11,7 @@ pub struct Hunk {
 pub struct Patch {
     pub file_path: String,
     pub hunks: Vec<Hunk>,
-    pub changed_lines: Vec<u32>,
+    pub changed_lines: Vec<usize>,
 }
 
 pub fn parse_patch_string(patch_string: &str) -> Vec<Patch> {
@@ -73,7 +73,7 @@ pub fn parse_patch_string(patch_string: &str) -> Vec<Patch> {
                 if let Some(patch) = current_patch.as_mut() {
                     patch
                         .changed_lines
-                        .push(hunk.new.start + current_line_in_hunk);
+                        .push((hunk.new.start + current_line_in_hunk - 1) as usize);
                 }
             }
         } else if line.starts_with('-') {
@@ -165,9 +165,6 @@ mod tests {
         for patch in patches {
             diff_file_hunk_count += patch.hunks.len();
             diff_file_lines_changed += patch.changed_lines.len();
-            for line in patch.changed_lines {
-                println!("{}:{}", patch.file_path, line);
-            }
         }
 
         assert_eq!(diff_file_hunk_count, hunk_count);

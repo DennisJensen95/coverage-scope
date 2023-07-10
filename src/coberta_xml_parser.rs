@@ -292,7 +292,7 @@ mod tests {
         let coverage = Coverage::new(&file_string);
 
         let total_coverage = coverage.get_total_coverage();
-        assert_eq!(total_coverage, 93.76);
+        assert_eq!(total_coverage, 95.32000000000001);
     }
 
     #[test]
