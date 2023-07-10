@@ -8,6 +8,5 @@ chrono = "0.4.24"
 clap = { version = "4.2.7", features = ["derive"] }
 lcov2cobertura = "1.0.1"
 mockall = "0.11.4"
-patch = { git = "https://github.com/DennisJensen95/git-patch-parser" }
 serde = { version = "1.0.130", features = ["derive"]}
 serde-xml-rs = "0.6.0"

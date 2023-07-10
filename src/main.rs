@@ -4,6 +4,7 @@ mod coberta_xml_parser;
 mod command_runner;
 mod coverage_converter;
 mod git_diff_parser;
+mod git_patch_parser;
 
 use coberta_xml_parser::Coverage;
 use command_runner::{CommandRunner, CommandRunnerTrait};
