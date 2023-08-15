@@ -47,7 +47,7 @@ struct Package {
     #[serde(rename = "branch-rate")]
     _branch_rate: String,
     #[serde(rename = "complexity")]
-    _complexity: String,
+    _complexity: Option<String>,
     classes: Classes,
 }
 
@@ -63,7 +63,7 @@ struct Class {
     #[serde(rename = "filename")]
     filename: String,
     #[serde(rename = "complexity")]
-    _complexity: String,
+    _complexity: Option<String>,
     #[serde(rename = "line-rate")]
     _line_rate: String,
     #[serde(rename = "branch-rate")]
