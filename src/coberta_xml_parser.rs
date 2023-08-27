@@ -20,7 +20,7 @@ pub struct Coverage {
     #[serde(rename = "branch-rate")]
     _branch_rate: String,
     #[serde(rename = "complexity")]
-    _complexity: String,
+    _complexity: Option<String>,
     #[serde(rename = "sources")]
     sources: Sources,
     packages: Packages,
@@ -149,7 +149,10 @@ impl Package {
 
 impl Coverage {
     pub fn new(file_string: &str) -> Coverage {
-        let coverage: Coverage = serde_xml_rs::from_str(file_string).unwrap();
+        // Remove BOM if it exists (C# support)
+        let clean_string = file_string.trim_start_matches('\u{feff}');
+
+        let coverage: Coverage = serde_xml_rs::from_str(clean_string).unwrap();
         coverage
     }
 
@@ -303,6 +306,16 @@ mod tests {
 
         let lines_with_code = coverage.get_lines_with_code("src/analytics/firebase_interface.py");
         assert_eq!(lines_with_code.len(), 11);
+    }
+
+    #[test]
+    fn test_bom_removal() {
+        let file_string = std::fs::read_to_string("assets/coberta_coverage/c_sharp.xml").unwrap();
+        let coverage = Coverage::new(&file_string);
+
+        let lines_with_code =
+            coverage.get_lines_with_code("Controllers/WeatherForecastController.cs");
+        assert_eq!(lines_with_code.len(), 17);
     }
 
     #[test]

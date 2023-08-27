@@ -19,6 +19,9 @@ The package currently has only been tested with the following coding languages:
 - Rust
 - Golang
 - Dart
+- C#
+- Angular
+- React
 
 These are the only languages that have been tested. However, the logic should be
 applicable for other languages.
@@ -40,7 +43,7 @@ when measuring changed files coverage, and the minimum threshold for both the
 total coverage and the changed files coverage.
 
 ```yaml
-- uses: dennisjensen95/coverage-scope@v0.4.2
+- uses: dennisjensen95/coverage-scope@v0.5.0
   with: 
     coverage-filepath: cobertura.xml
     branch: main
