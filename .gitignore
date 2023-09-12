@@ -3,3 +3,6 @@
 # Coverage reports
 cobertura.xml
 tarpaulin-report.html
+
+# Nix
+result
