@@ -61,7 +61,7 @@ jobs:
       
       - name: Create the Badge
         if: github.ref == 'refs/heads/main'
-        uses: schneegans/dynamic-badges-action@v1.6.0
+        uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.CODE_COVERAGE_BADGE }}
           gistID: 2b7862c80c14d562c8659e1283543190
