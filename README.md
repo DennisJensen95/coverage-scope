@@ -1,6 +1,7 @@
 <!-- Badge ci build ci.yml -->
 ![Build Status](https://github.com/DennisJensen95/coverage-scope/actions/workflows/ci.yml/badge.svg)
 ![Code coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/DennisJensen95/2b7862c80c14d562c8659e1283543190/raw/coverage-scope.json)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/DennisJensen95/coverage-scope/badge)](https://securityscorecards.dev/viewer/?uri=github.com/DennisJensen95/coverage-scope)
 
 # coverage-scope
 
