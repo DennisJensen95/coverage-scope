@@ -25,7 +25,7 @@ jobs:
       - uses: cachix/install-nix-action@v20
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      
+
       - name: Install just
         run: |
           # Update nix
@@ -34,7 +34,7 @@ jobs:
           nix-env -iA nixpkgs.just
           nix-env -iA nixpkgs.xmlstarlet
           nix-env -iA nixpkgs.cargo-tarpaulin
-      
+
       - name: Lint code
         run: just lint
         env:
@@ -52,13 +52,13 @@ jobs:
           echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
         env:
           CARGO_TERM_COLOR: always
-      
+
       - name: Upload file
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-file
           path: cobertura.xml
-      
+
       - name: Create the Badge
         if: github.ref == 'refs/heads/main'
         uses: schneegans/dynamic-badges-action@v1.7.0
@@ -69,7 +69,7 @@ jobs:
           label: Test Coverage
           message: ${{ env.COVERAGE }}
           color: green
-  
+
   run-action:
     needs: build
     runs-on: ubuntu-latest
@@ -84,12 +84,12 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt, clippy
-      
+
       - name: Download coverage
         uses: actions/download-artifact@v2
         with:
           name: coverage-file
-      
+
       - name: Coverage scope action main
         uses: ./ # Uses an action in the root directory
         id: coverage
@@ -98,7 +98,7 @@ jobs:
           branch: main
           threshold-total: 80
           threshold-change: 90
-  
+
   fetch-action:
     needs: build
     runs-on: ubuntu-latest
@@ -114,7 +114,7 @@ jobs:
           name: coverage-file
 
       - uses: dennisjensen95/coverage-scope@v0.5.0
-        with: 
+        with:
           coverage-filepath: cobertura.xml
           branch: main
           threshold-total: 80
