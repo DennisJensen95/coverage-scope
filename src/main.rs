@@ -84,7 +84,7 @@ fn run_app(args: Args, command_runner: &dyn CommandRunnerTrait) -> bool {
     }
 
     // Diff command
-    let cmd = String::from("git diff origin/") + &args.branch + " HEAD --diff-filter=d";
+    let cmd = String::from("git diff --no-ext-diff origin/") + &args.branch + " HEAD --diff-filter=d";
     println!("Running command: {cmd}");
     println!("\n --- \n");
     println!("Files changed:");
