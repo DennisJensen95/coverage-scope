@@ -14,7 +14,7 @@ pub struct Patch {
     pub changed_lines: Vec<usize>,
 }
 
-pub fn parse_patch_string(patch_string: &str) -> Vec<Patch> {
+pub fn parse_patch_string(patch_string: &str) -> Result<Vec<Patch>, String> {
     let lines = patch_string.lines();
     let mut patches: Vec<Patch> = Vec::new();
     let mut current_patch: Option<Patch> = None;
@@ -32,12 +32,7 @@ pub fn parse_patch_string(patch_string: &str) -> Vec<Patch> {
                 patches.push(patch);
             }
 
-            // diff --git a/.github/workflows/ci_cd.yml b/.github/workflows/ci_cd.yml
-            // Split the line and get the last file path
-            let file_path = match line.split(' ').last() {
-                Some(path) => path.strip_prefix("b/").unwrap().to_string(),
-                None => panic!("Error parsing file path from diff line: {line}"),
-            };
+            let file_path = parse_diff_header_path(line)?;
 
             current_patch = Some(Patch {
                 file_path,
@@ -91,7 +86,28 @@ pub fn parse_patch_string(patch_string: &str) -> Vec<Patch> {
         patches.push(patch);
     }
 
-    patches
+    Ok(patches)
+}
+
+fn parse_diff_header_path(header: &str) -> Result<String, String> {
+    let header = header
+        .strip_prefix("diff --git ")
+        .ok_or_else(|| format!("invalid Git diff header: {header}"))?;
+
+    if header.starts_with('"') {
+        let (_, destination) = header
+            .rsplit_once(" \"b/")
+            .ok_or_else(|| format!("missing destination path in Git diff header: {header}"))?;
+        return destination
+            .strip_suffix('"')
+            .map(|path| path.to_string())
+            .ok_or_else(|| format!("unterminated quoted path in Git diff header: {header}"));
+    }
+
+    header
+        .rsplit_once(" b/")
+        .map(|(_, path)| path.to_string())
+        .ok_or_else(|| format!("missing destination path in Git diff header: {header}"))
 }
 
 fn parse_hunk_header(hunk_header: &str) -> (u32, u32) {
@@ -156,7 +172,7 @@ mod tests {
         hunk_count: usize,
         lines_changed: usize,
     ) {
-        let patches = parse_patch_string(str);
+        let patches = parse_patch_string(str).expect("patch should parse");
         assert_eq!(patches.len(), patches_count);
 
         // count hunks
@@ -184,5 +200,38 @@ mod tests {
         let patch_string =
             std::fs::read_to_string("assets/diff_files/tricky.diff").expect("Unable to read file");
         check_parse_diff_file(&patch_string, 9, 23, 577)
+    }
+
+    #[test]
+    fn test_parse_patch_path_with_spaces() {
+        let patch_string =
+            "diff --git a/backlog/tasks/task-1 - Feature.md b/backlog/tasks/task-1 - Feature.md";
+        let result = parse_patch_string(patch_string);
+
+        assert!(result.is_ok(), "a valid path containing spaces must parse");
+        assert_eq!(
+            result.expect("patch should parse")[0].file_path,
+            "backlog/tasks/task-1 - Feature.md"
+        );
+    }
+
+    #[test]
+    fn test_parse_quoted_patch_path_with_spaces() {
+        let patches =
+            parse_patch_string("diff --git \"a/backlog/task 1.md\" \"b/backlog/task 1.md\"")
+                .expect("quoted patch should parse");
+
+        assert_eq!(patches[0].file_path, "backlog/task 1.md");
+    }
+
+    #[test]
+    fn test_malformed_diff_header_returns_descriptive_error() {
+        let error = match parse_patch_string("diff --git malformed-header") {
+            Ok(_) => panic!("malformed header should return an error"),
+            Err(error) => error,
+        };
+
+        assert!(error.contains("missing destination path"));
+        assert!(error.contains("malformed-header"));
     }
 }

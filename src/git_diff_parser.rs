@@ -9,7 +9,10 @@ pub struct DiffFiles {
 impl DiffFiles {
     pub fn new(diff_file_string: &str, file_extensions: Vec<String>) -> Self {
         // Parse the diff file and return file paths and line numbers changed
-        let patches = parse_patch_string(diff_file_string);
+        let patches = parse_patch_string(diff_file_string).unwrap_or_else(|error| {
+            eprintln!("Unable to parse Git diff: {error}");
+            Vec::new()
+        });
 
         let mut files_changed = DiffFiles {
             files: Vec::new(),
